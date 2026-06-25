@@ -1,0 +1,66 @@
+{
+	"name": "tmux.js",
+	"version": "0.1.0",
+	"private": true,
+	"description": "TypeScript-first programmatic tmux for Node.js and Bun",
+	"type": "module",
+	"main": "./dist/exports/node.js",
+	"module": "./dist/exports/node.js",
+	"types": "./dist/exports/node.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/exports/node.d.ts",
+			"import": "./dist/exports/node.js"
+		},
+		"./effect": {
+			"types": "./dist/exports/effect.d.ts",
+			"import": "./dist/exports/effect.js"
+		},
+		"./bun": {
+			"types": "./dist/exports/bun.d.ts",
+			"import": "./dist/exports/bun.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"run:index": "tsx examples/index.ts",
+		"run:effect": "tsx examples/effect.ts",
+		"build": "tsc -p tsconfig.build.json",
+		"lint": "biome lint .",
+		"format": "biome format --write .",
+		"check": "biome check .",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit",
+		"diagnostics": "effect-language-service diagnostics --project \"$PWD/tsconfig.json\" --format text"
+	},
+	"keywords": [
+		"tmux",
+		"cli",
+		"effect",
+		"typescript",
+		"terminal",
+		"node"
+	],
+	"author": "Doga Genc",
+	"license": "ISC",
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"packageManager": "pnpm@10.27.0",
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.0",
+		"@effect/language-service": "^0.86.2",
+		"@effect/vitest": "4.0.0-beta.84",
+		"@types/node": "^25.9.3",
+		"tsx": "^4.22.4",
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.9"
+	},
+	"dependencies": {
+		"@effect/platform-bun": "4.0.0-beta.84",
+		"@effect/platform-node": "4.0.0-beta.84",
+		"effect": "4.0.0-beta.84"
+	}
+}
