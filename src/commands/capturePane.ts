@@ -6,18 +6,12 @@ import { TmuxOutput } from "../internal/Output.js";
 /**
  * Capture the contents of a tmux pane (`tmux capture-pane`).
  *
- * `print` and `bufferName` are mutually exclusive (enforced by the type):
- * `print: true` forbids `bufferName`; `print: false` requires one.
- *
- * @returns The captured text when `{ print: true }`, otherwise an empty string
- * (the capture is written to a tmux paste buffer).
+ * @returns The captured text when printed, otherwise an empty string.
  *
  * @example
  * ```ts
- * // Read the visible pane to a string
  * const text = await tmux.capturePane({ print: true, targetPane: "0" });
  *
- * // Capture full scrollback into a named buffer
  * await tmux.capturePane({
  *   print: false,
  *   bufferName: "snapshot",

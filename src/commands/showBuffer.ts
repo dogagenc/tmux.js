@@ -6,15 +6,11 @@ import { TmuxOutput } from "../internal/Output.js";
 /**
  * Show the contents of a tmux paste buffer (`tmux show-buffer`).
  *
- * Without `bufferName`, returns the most recently added buffer; an unknown
- * `bufferName` fails with `TmuxCommandError`.
- *
  * @returns The buffer text.
  *
  * @example
  * ```ts
  * const latest = await tmux.showBuffer();
- * const named = await tmux.showBuffer({ bufferName: "snapshot" });
  * ```
  */
 export const showBuffer = TmuxCommand.make("showBuffer", {

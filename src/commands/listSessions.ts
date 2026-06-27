@@ -6,13 +6,11 @@ import { TmuxOutput } from "../internal/Output.js";
 /**
  * List tmux sessions (`tmux list-sessions`).
  *
- * @returns One record per session. With no server running, fails with
- * `TmuxServerNotRunning` (not an empty array).
+ * @returns One record per session.
  *
  * @example
  * ```ts
- * const all = await tmux.listSessions();
- * const work = await tmux.listSessions({ filter: "#{m:work*,#{session_name}}" });
+ * const sessions = await tmux.listSessions();
  * ```
  */
 export const listSessions = TmuxCommand.make("listSessions", {

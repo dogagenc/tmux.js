@@ -5,5 +5,5 @@
 		"moduleResolution": "Bundler",
 		"noEmit": true
 	},
-	"include": ["src", "tests", "examples"]
+	"include": ["src", "tests"]
 }

@@ -6,17 +6,11 @@ import { TmuxOutput } from "../internal/Output.js";
 /**
  * List tmux windows (`tmux list-windows`).
  *
- * Lists the current/target session by default; pass `{ all: true }` for every
- * session.
- *
- * @returns One record per window. With no server running, fails with
- * `TmuxServerNotRunning` (not an empty array). Use `includeVariables` for extra
- * context such as `["session_name"]`.
+ * @returns One record per window.
  *
  * @example
  * ```ts
  * const windows = await tmux.listWindows({ targetSession: "work" });
- * const everywhere = await tmux.listWindows({ all: true });
  * ```
  */
 export const listWindows = TmuxCommand.make("listWindows", {

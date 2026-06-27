@@ -4,20 +4,14 @@ import { TmuxFlag } from "../internal/Flag.js";
 import { TmuxOutput } from "../internal/Output.js";
 
 /**
- * Display a message in a client's status line, or evaluate a tmux format
- * (`tmux display-message`).
+ * Display a message or evaluate a tmux format (`tmux display-message`).
  *
- * The optional positional `message` is the text or format to show.
- *
- * @returns The expanded string when `{ print: true }` (trailing newline
- * stripped), otherwise an empty string (the message shows in the status line).
+ * @returns The printed message when `{ print: true }`, otherwise an empty string.
  *
  * @example
  * ```ts
- * // Flash a message in the status line
  * await tmux.displayMessage("deploy finished");
  *
- * // Evaluate a format and read it back
  * const name = await tmux.displayMessage("#{session_name}", { print: true });
  * ```
  */
