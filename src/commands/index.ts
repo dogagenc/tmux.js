@@ -9,3 +9,4 @@ export * from "./newSession.js";
 export * from "./newWindow.js";
 export * from "./renameSession.js";
 export * from "./showBuffer.js";
+export * from "./splitWindow.js";

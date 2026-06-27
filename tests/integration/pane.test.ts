@@ -43,5 +43,19 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				expect(typeof text).toBe("string");
 			}),
 		);
+
+		it.effect("splits the fixture pane into a second pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const before = yield* tmux.listPanes({ all: true });
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const after = yield* tmux.listPanes({ all: true });
+				expect(after.length).toBe(before.length + 1);
+				for (const p of after) expect(p.pane_id).toMatch(/^%/);
+			}),
+		);
 	});
 });
