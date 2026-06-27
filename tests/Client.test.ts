@@ -64,7 +64,7 @@ describe("client options validation", () => {
 						tmuxLayer(spawnerWith(fakeHandle(empty)), {
 							socketName: "a",
 							socketPath: "b",
-						}),
+						} as never),
 					),
 				),
 			);

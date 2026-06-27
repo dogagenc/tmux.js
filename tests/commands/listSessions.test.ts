@@ -127,8 +127,10 @@ describe("includeVariables (listSessions)", () => {
 			const sessions = yield* tmux.listSessions({
 				includeVariables: ["window_index"],
 			});
+			const [session] = sessions;
+			if (session === undefined) throw new Error("expected one session");
 			// window_index is statically present and typed number after widening
-			const windowIndex: number = sessions[0].window_index;
+			const windowIndex: number = session.window_index;
 			expect(windowIndex).toBe(7);
 		}).pipe(
 			Effect.provide(
@@ -151,6 +153,7 @@ describe("includeVariables (listSessions)", () => {
 				yield* tmux.listSessions({ includeVariables: ["window_index"] });
 				const format =
 					harness.captured.args[harness.captured.args.indexOf("-F") + 1];
+				if (format === undefined) throw new Error("expected -F format");
 				expect(format.includes("#{window_index}")).toBe(true);
 			}).pipe(Effect.provide(harness.layer));
 		}),

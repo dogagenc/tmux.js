@@ -29,7 +29,7 @@ describe("standalone TmuxClient API", () => {
 		const client = new PromiseTmuxClient({
 			socketName: "a",
 			socketPath: "b",
-		});
+		} as never);
 		await expect(client.listSessions()).rejects.toBeInstanceOf(
 			TmuxClientConfigError,
 		);

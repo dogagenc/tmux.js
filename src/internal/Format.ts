@@ -66,10 +66,14 @@ export const splitRecords = (stdout: string): ReadonlyArray<string> =>
  */
 export const decodeLine = <Fields extends Schema.Struct.Fields>(
 	schema: Schema.Struct<Fields>,
-) => {
+): ((
+	line: string,
+) => Effect.Effect<Schema.Struct<Fields>["Type"], TmuxParseError, never>) => {
 	const keys = Struct.keys(schema.fields);
 	const fieldCount = Arr.length(keys);
-	const decode = Schema.decodeUnknownEffect(schema);
+	const decode = Schema.decodeUnknownEffect(schema) as (
+		input: unknown,
+	) => Effect.Effect<Schema.Struct<Fields>["Type"], unknown, never>;
 
 	return Effect.fnUntraced(function* (line: string) {
 		const values = pipe(line, Str.split(UNIT_SEPARATOR));
@@ -95,5 +99,7 @@ export const decodeLine = <Fields extends Schema.Struct.Fields>(
 					}),
 			),
 		);
-	});
+	}) as (
+		line: string,
+	) => Effect.Effect<Schema.Struct<Fields>["Type"], TmuxParseError, never>;
 };

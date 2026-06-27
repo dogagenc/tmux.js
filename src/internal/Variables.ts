@@ -99,12 +99,18 @@ export type FormattedRecord<
 	Inc extends ReadonlyArray<TmuxVariable>,
 > = Prettify<DecodedVariables<K | Inc[number]>>;
 
+type VariableFields<K extends TmuxVariable> = {
+	[P in K]: (typeof TmuxVariables)[P];
+};
+
 /** Build a struct schema for the given variables, in order. */
-export const variableStruct = (keys: ReadonlyArray<TmuxVariable>) =>
+export const variableStruct = <const Keys extends ReadonlyArray<TmuxVariable>>(
+	keys: Keys,
+): Schema.Struct<VariableFields<Keys[number]>> =>
 	Schema.Struct(
 		Object.fromEntries(
 			keys.map((key) => [key, TmuxVariables[key]]),
-		) as Schema.Struct.Fields,
+		) as VariableFields<Keys[number]>,
 	);
 
 /**

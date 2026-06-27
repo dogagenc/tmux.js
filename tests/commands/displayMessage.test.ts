@@ -40,9 +40,9 @@ describe("TmuxClient.displayMessage", () => {
 
 	it.effect("displayMessage() emits display-message", () =>
 		Effect.gen(function* () {
-			expect(yield* captureArgs((tmux) => tmux.displayMessage())).toEqual([
-				"display-message",
-			]);
+			expect(
+				yield* captureArgs((tmux) => tmux.displayMessage(undefined)),
+			).toEqual(["display-message"]);
 		}),
 	);
 
