@@ -4,5 +4,6 @@ export * from "./killSession.js";
 export * from "./listPanes.js";
 export * from "./listSessions.js";
 export * from "./listWindows.js";
+export * from "./newSession.js";
 export * from "./renameSession.js";
 export * from "./showBuffer.js";
