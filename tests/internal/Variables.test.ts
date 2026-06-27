@@ -22,6 +22,17 @@ const WindowStruct = variableStruct([
 	"window_name",
 	"window_active",
 ]);
+const PaneStruct = variableStruct([
+	"pane_index",
+	"pane_width",
+	"pane_height",
+	"history_size",
+	"history_limit",
+	"history_bytes",
+	"pane_id",
+	"pane_active",
+	"pane_dead",
+]);
 const US = "\x1f";
 
 describe("variable codec encoding", () => {
@@ -113,4 +124,31 @@ describe("window_active decoding", () => {
 			expect(error).toBeInstanceOf(TmuxParseError);
 		}),
 	);
+});
+
+describe("pane variable codec", () => {
+	const object = {
+		pane_index: 1,
+		pane_width: 174,
+		pane_height: 30,
+		history_size: 3,
+		history_limit: 2000,
+		history_bytes: 149619,
+		pane_id: "%3",
+		pane_active: true,
+		pane_dead: false,
+	};
+
+	it.effect("decodes finite numbers, pane_id string, and bit booleans", () =>
+		Effect.gen(function* () {
+			const line = ["1", "174", "30", "3", "2000", "149619", "%3", "1", "0"];
+			expect(yield* decodeLine(PaneStruct)(line.join(US))).toEqual(object);
+		}),
+	);
+
+	it("encodes pane bit booleans true -> '1' and false -> '0'", () => {
+		const encoded = Schema.encodeSync(PaneStruct)(object);
+		expect(encoded.pane_active).toBe("1");
+		expect(encoded.pane_dead).toBe("0");
+	});
 });

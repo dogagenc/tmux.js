@@ -44,6 +44,16 @@ export const TmuxVariables = {
 	window_height: Schema.FiniteFromString,
 	window_layout: Schema.String,
 	window_active: BooleanFromBitString,
+	// Pane
+	pane_index: Schema.FiniteFromString,
+	pane_width: Schema.FiniteFromString,
+	pane_height: Schema.FiniteFromString,
+	history_size: Schema.FiniteFromString,
+	history_limit: Schema.FiniteFromString,
+	history_bytes: Schema.FiniteFromString,
+	pane_id: Schema.String,
+	pane_active: BooleanFromBitString,
+	pane_dead: BooleanFromBitString,
 } as const;
 
 /** A known tmux format variable name (a key of {@link TmuxVariables}). */
