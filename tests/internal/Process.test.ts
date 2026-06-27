@@ -193,8 +193,8 @@ describe("TmuxProcess spawn and stream failures", () => {
 				Effect.provide(
 					(() => {
 						const wire = lines(
-							row("$0", "🚀main", "3", "2", "1700000000"),
-							row("$1", "work", "1", "0", "1700000500"),
+							row("$0", "🚀main", "3", "1700000000", "0", "", "2"),
+							row("$1", "work", "1", "1700000500", "0", "", "0"),
 						);
 						const bytes = encoder.encode(wire);
 						const chunks = [bytes.slice(0, 4), bytes.slice(4)];

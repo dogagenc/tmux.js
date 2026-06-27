@@ -6,10 +6,11 @@ import { TmuxOutput } from "../internal/Output.js";
 /**
  * Capture the contents of a tmux pane (`tmux capture-pane`).
  *
- * Resolves to the captured text when `{ print: true }`, otherwise writes to a
- * tmux paste buffer and resolves to an empty string. `print` and `bufferName`
- * are mutually exclusive and the type enforces it: `print: true` forbids
- * `bufferName`, while `print: false` requires one.
+ * `print` and `bufferName` are mutually exclusive (enforced by the type):
+ * `print: true` forbids `bufferName`; `print: false` requires one.
+ *
+ * @returns The captured text when `{ print: true }`, otherwise an empty string
+ * (the capture is written to a tmux paste buffer).
  *
  * @example
  * ```ts

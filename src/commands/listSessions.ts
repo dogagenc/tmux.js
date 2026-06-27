@@ -1,16 +1,13 @@
 import { Schema } from "effect";
 import { TmuxCommand } from "../internal/Command.js";
 import { TmuxFlag } from "../internal/Flag.js";
-import { SessionFields } from "../internal/FormatFields.js";
 import { TmuxOutput } from "../internal/Output.js";
 
 /**
  * List tmux sessions (`tmux list-sessions`).
  *
- * Resolves to an array of {@link SessionFields} records — `session_id`,
- * `session_name`, window count, attached-client count, and creation `Date`.
- * Mirrors tmux: with no server running, fails with `TmuxServerNotRunning` rather
- * than returning an empty array.
+ * @returns One record per session. With no server running, fails with
+ * `TmuxServerNotRunning` (not an empty array).
  *
  * @example
  * ```ts
@@ -24,5 +21,13 @@ export const listSessions = TmuxCommand.make("listSessions", {
 		/** Filter sessions by tmux format expression (`-f`). */
 		filter: TmuxFlag("-f", Schema.NonEmptyString),
 	}),
-	output: TmuxOutput.formattedLines(SessionFields),
+	output: TmuxOutput.formattedLines([
+		"session_id",
+		"session_name",
+		"session_windows",
+		"session_created",
+		"session_grouped",
+		"session_group",
+		"session_attached",
+	]),
 });

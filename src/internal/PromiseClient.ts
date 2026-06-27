@@ -3,6 +3,12 @@ import type { ChildProcessSpawner } from "effect/unstable/process";
 import * as commands from "../commands/index.js";
 import { decodeConfig, type TmuxClientConfig } from "./Config.js";
 import { TmuxProcess } from "./Process.js";
+import type {
+	FormattedArgs,
+	FormattedCommandMeta,
+	FormattedRecord,
+	TmuxVariable,
+} from "./Variables.js";
 
 type PlatformLayer = Layer.Layer<
 	ChildProcessSpawner.ChildProcessSpawner,
@@ -11,11 +17,20 @@ type PlatformLayer = Layer.Layer<
 >;
 
 export type PromiseCommands<T> = {
-	[K in keyof T]: T[K] extends (
-		...args: infer Args
-	) => Effect.Effect<infer A, unknown, TmuxProcess>
-		? (...args: Args) => Promise<A>
-		: never;
+	[K in keyof T]: T[K] extends FormattedCommandMeta<
+		infer O,
+		infer A,
+		infer Keys,
+		unknown
+	>
+		? <const Inc extends ReadonlyArray<TmuxVariable> = []>(
+				...args: FormattedArgs<O, A, Inc>
+			) => Promise<ReadonlyArray<FormattedRecord<Keys, Inc>>>
+		: T[K] extends (
+					...args: infer Args
+				) => Effect.Effect<infer A, unknown, TmuxProcess>
+			? (...args: Args) => Promise<A>
+			: never;
 };
 
 class TmuxClientBase {

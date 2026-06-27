@@ -2,13 +2,31 @@ import { Context, Effect, Layer } from "effect";
 import * as commands from "../commands/index.js";
 import { decodeConfig, type TmuxClientConfig } from "./Config.js";
 import { TmuxProcess } from "./Process.js";
+import type { Prettify } from "./utils/Types.js";
+import type {
+	FormattedArgs,
+	FormattedCommandMeta,
+	FormattedRecord,
+	TmuxVariable,
+} from "./Variables.js";
 
+// Rebuild each command's signature with TmuxProcess removed, widening formatted
+// commands via their FormattedCommandMeta phantom.
 type ProvidedCommands<T> = {
-	readonly [K in keyof T]: T[K] extends (
-		...args: infer Args
-	) => Effect.Effect<infer A, infer E, TmuxProcess>
-		? (...args: Args) => Effect.Effect<A, E>
-		: never;
+	readonly [K in keyof T]: T[K] extends FormattedCommandMeta<
+		infer O,
+		infer A,
+		infer Keys,
+		infer E
+	>
+		? <const Inc extends ReadonlyArray<TmuxVariable> = []>(
+				...args: FormattedArgs<O, A, Inc>
+			) => Effect.Effect<ReadonlyArray<FormattedRecord<Keys, Inc>>, E>
+		: T[K] extends (
+					...args: infer Args
+				) => Effect.Effect<infer A, infer E, TmuxProcess>
+			? (...args: Args) => Effect.Effect<A, E>
+			: never;
 };
 
 type ProcessCommand = (
@@ -38,7 +56,7 @@ const provideProcessToCommands = <T extends Record<string, ProcessCommand>>(
  */
 export class TmuxClient extends Context.Service<
 	TmuxClient,
-	ProvidedCommands<typeof commands>
+	Prettify<ProvidedCommands<typeof commands>>
 >()("tmux-js/TmuxClient") {
 	/**
 	 * Build the `TmuxClient` layer, the Effect-native entry point. Provide it to a

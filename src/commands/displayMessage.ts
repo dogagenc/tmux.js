@@ -7,11 +7,10 @@ import { TmuxOutput } from "../internal/Output.js";
  * Display a message in a client's status line, or evaluate a tmux format
  * (`tmux display-message`).
  *
- * The optional positional `message` is the text or format to show; omit it (with
- * `{ print: true }`) to print an expanded format such as `-F`/`format` to stdout.
- * With `{ print: true }` the resolved string is returned (trailing newline
- * stripped); otherwise it shows in the status line and resolves to an empty
- * string.
+ * The optional positional `message` is the text or format to show.
+ *
+ * @returns The expanded string when `{ print: true }` (trailing newline
+ * stripped), otherwise an empty string (the message shows in the status line).
  *
  * @example
  * ```ts

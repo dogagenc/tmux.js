@@ -1,15 +1,31 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Effect, Schema } from "effect";
+import { Effect } from "effect";
 import { TmuxParseError } from "../../src/Errors";
 import {
 	decodeLine,
 	formatString,
 	splitRecords,
 } from "../../src/internal/Format";
-import { SessionFields, WindowFields } from "../../src/internal/FormatFields";
+import { variableStruct } from "../../src/internal/Variables";
 
-const SessionStruct = Schema.Struct(SessionFields);
-const WindowStruct = Schema.Struct({ ...SessionFields, ...WindowFields });
+const SessionStruct = variableStruct([
+	"session_id",
+	"session_name",
+	"session_windows",
+	"session_attached",
+	"session_created",
+]);
+const WindowStruct = variableStruct([
+	"session_id",
+	"session_name",
+	"session_windows",
+	"session_attached",
+	"session_created",
+	"window_id",
+	"window_index",
+	"window_name",
+	"window_active",
+]);
 
 // Mirror the control-byte separators the format layer uses.
 const US = "\x1f";

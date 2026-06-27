@@ -1,20 +1,17 @@
 import { Schema } from "effect";
 import { TmuxCommand } from "../internal/Command.js";
 import { TmuxFlag } from "../internal/Flag.js";
-import { SessionFields, WindowFields } from "../internal/FormatFields.js";
 import { TmuxOutput } from "../internal/Output.js";
 
 /**
  * List tmux windows (`tmux list-windows`).
  *
- * Resolves to an array of records combining {@link WindowFields} with the
- * {@link SessionFields} of the owning session — tmux's `list-windows` exposes
- * session format variables too. A missing server surfaces as
- * `TmuxServerNotRunning` (the shared `TmuxCommand.make` path classifies it;
- * nothing is swallowed into "zero windows").
+ * Lists the current/target session by default; pass `{ all: true }` for every
+ * session.
  *
- * By default lists windows of the current/target session; pass `{ all: true }`
- * to list across every session.
+ * @returns One record per window. With no server running, fails with
+ * `TmuxServerNotRunning` (not an empty array). Use `includeVariables` for extra
+ * context such as `["session_name"]`.
  *
  * @example
  * ```ts
@@ -32,8 +29,15 @@ export const listWindows = TmuxCommand.make("listWindows", {
 		/** Target session whose windows are listed (`-t`). */
 		targetSession: TmuxFlag("-t", Schema.NonEmptyString),
 	}),
-	output: TmuxOutput.formattedLines({
-		...SessionFields,
-		...WindowFields,
-	}),
+	output: TmuxOutput.formattedLines([
+		"window_id",
+		"window_index",
+		"window_name",
+		"window_raw_flags",
+		"window_panes",
+		"window_width",
+		"window_height",
+		"window_layout",
+		"window_active",
+	]),
 });

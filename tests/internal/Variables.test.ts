@@ -2,13 +2,29 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 import { TmuxParseError } from "../../src/Errors";
 import { decodeLine } from "../../src/internal/Format";
-import { SessionFields, WindowFields } from "../../src/internal/FormatFields";
+import { variableStruct } from "../../src/internal/Variables";
 
-const SessionStruct = Schema.Struct(SessionFields);
-const WindowStruct = Schema.Struct({ ...SessionFields, ...WindowFields });
+const SessionStruct = variableStruct([
+	"session_id",
+	"session_name",
+	"session_windows",
+	"session_attached",
+	"session_created",
+]);
+const WindowStruct = variableStruct([
+	"session_id",
+	"session_name",
+	"session_windows",
+	"session_attached",
+	"session_created",
+	"window_id",
+	"window_index",
+	"window_name",
+	"window_active",
+]);
 const US = "\x1f";
 
-describe("field codec encoding", () => {
+describe("variable codec encoding", () => {
 	it("session_created floors sub-second millis to whole seconds", () => {
 		expect(
 			Schema.encodeSync(SessionStruct)({

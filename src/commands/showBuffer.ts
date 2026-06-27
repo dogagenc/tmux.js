@@ -6,8 +6,10 @@ import { TmuxOutput } from "../internal/Output.js";
 /**
  * Show the contents of a tmux paste buffer (`tmux show-buffer`).
  *
- * Resolves to the buffer text. Without `bufferName`, tmux returns its most
- * recently added buffer; an unknown `bufferName` fails with `TmuxCommandError`.
+ * Without `bufferName`, returns the most recently added buffer; an unknown
+ * `bufferName` fails with `TmuxCommandError`.
+ *
+ * @returns The buffer text.
  *
  * @example
  * ```ts

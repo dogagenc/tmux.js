@@ -5,32 +5,32 @@ import { TmuxClient } from "../../src/exports/effect";
 import { capturingTmux, flagArgs, lines, row, tmuxFrom } from "../utils";
 
 describe("TmuxClient.listWindows", () => {
-	it.effect("decodes windows from composed session + window output", () =>
+	it.effect("decodes windows from list-windows output", () =>
 		Effect.gen(function* () {
 			const tmux = yield* TmuxClient;
 			const windows = yield* tmux.listWindows();
 
 			expect(windows).toEqual([
 				{
-					session_id: "$0",
-					session_name: "main",
-					session_windows: 2,
-					session_attached: 1,
-					session_created: new Date(1_700_000_000 * 1000),
 					window_id: "@0",
 					window_index: 0,
 					window_name: "editor",
+					window_raw_flags: "*",
+					window_panes: 3,
+					window_width: 80,
+					window_height: 24,
+					window_layout: "bf2c,80x24,0,0,0",
 					window_active: true,
 				},
 				{
-					session_id: "$0",
-					session_name: "main",
-					session_windows: 2,
-					session_attached: 1,
-					session_created: new Date(1_700_000_000 * 1000),
 					window_id: "@1",
 					window_index: 1,
 					window_name: "shell",
+					window_raw_flags: "-",
+					window_panes: 1,
+					window_width: 80,
+					window_height: 24,
+					window_layout: "9f3a,80x24,0,0,1",
 					window_active: false,
 				},
 			]);
@@ -38,8 +38,28 @@ describe("TmuxClient.listWindows", () => {
 			Effect.provide(
 				tmuxFrom({
 					stdout: lines(
-						row("$0", "main", "2", "1", "1700000000", "@0", "0", "editor", "1"),
-						row("$0", "main", "2", "1", "1700000000", "@1", "1", "shell", "0"),
+						row(
+							"@0",
+							"0",
+							"editor",
+							"*",
+							"3",
+							"80",
+							"24",
+							"bf2c,80x24,0,0,0",
+							"1",
+						),
+						row(
+							"@1",
+							"1",
+							"shell",
+							"-",
+							"1",
+							"80",
+							"24",
+							"9f3a,80x24,0,0,1",
+							"0",
+						),
 					),
 					stderr: "",
 					exitCode: 0,

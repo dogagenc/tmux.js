@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { TmuxParseError } from "../../src/Errors";
+import { TmuxCommandOptionsError, TmuxParseError } from "../../src/Errors";
 import { TmuxClient } from "../../src/exports/effect";
 import { capturingTmux, flagArgs, lines, row, tmuxFrom } from "../utils";
 
@@ -15,23 +15,27 @@ describe("TmuxClient.listSessions", () => {
 					session_id: "$0",
 					session_name: "main",
 					session_windows: 3,
-					session_attached: 2,
 					session_created: new Date(1_700_000_000 * 1000),
+					session_grouped: false,
+					session_group: "",
+					session_attached: 2,
 				},
 				{
 					session_id: "$1",
 					session_name: "work",
 					session_windows: 1,
-					session_attached: 0,
 					session_created: new Date(1_700_000_500 * 1000),
+					session_grouped: true,
+					session_group: "dev",
+					session_attached: 0,
 				},
 			]);
 		}).pipe(
 			Effect.provide(
 				tmuxFrom({
 					stdout: lines(
-						row("$0", "main", "3", "2", "1700000000"),
-						row("$1", "work", "1", "0", "1700000500"),
+						row("$0", "main", "3", "1700000000", "0", "", "2"),
+						row("$1", "work", "1", "1700000500", "1", "dev", "0"),
 					),
 					stderr: "",
 					exitCode: 0,
@@ -56,7 +60,7 @@ describe("TmuxClient.listSessions", () => {
 			Effect.provide(
 				tmuxFrom({
 					// bad session_created: NumberFromString rejects non-numeric timestamps
-					stdout: lines(row("$0", "main", "3", "2", "notanumber")),
+					stdout: lines(row("$0", "main", "3", "notanumber", "0", "", "2")),
 					stderr: "",
 					exitCode: 0,
 				}),
@@ -110,6 +114,59 @@ describe("argv flag mapping (listSessions)", () => {
 			expect(
 				yield* captureFlags((tmux) => tmux.listSessions({ filter: "x" })),
 			).toEqual(["list-sessions", "-f", "x"]);
+		}),
+	);
+});
+
+describe("includeVariables (listSessions)", () => {
+	const empty = { stdout: "", stderr: "", exitCode: 0 };
+
+	it.effect("adds the variable to -F and decodes it (widened type)", () =>
+		Effect.gen(function* () {
+			const tmux = yield* TmuxClient;
+			const sessions = yield* tmux.listSessions({
+				includeVariables: ["window_index"],
+			});
+			// window_index is statically present and typed number after widening
+			const windowIndex: number = sessions[0].window_index;
+			expect(windowIndex).toBe(7);
+		}).pipe(
+			Effect.provide(
+				tmuxFrom({
+					stdout: lines(
+						row("$0", "main", "3", "1700000000", "0", "", "2", "7"),
+					),
+					stderr: "",
+					exitCode: 0,
+				}),
+			),
+		),
+	);
+
+	it.effect("appends #{window_index} to the -F format string", () =>
+		Effect.gen(function* () {
+			const harness = capturingTmux(empty);
+			yield* Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.listSessions({ includeVariables: ["window_index"] });
+				const format =
+					harness.captured.args[harness.captured.args.indexOf("-F") + 1];
+				expect(format.includes("#{window_index}")).toBe(true);
+			}).pipe(Effect.provide(harness.layer));
+		}),
+	);
+
+	it.effect("rejects an unknown variable before spawning tmux", () =>
+		Effect.gen(function* () {
+			const harness = capturingTmux(empty);
+			yield* Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const error = yield* Effect.flip(
+					tmux.listSessions({ includeVariables: ["nope"] } as never),
+				);
+				expect(error).toBeInstanceOf(TmuxCommandOptionsError);
+				expect(harness.captured.args).toEqual([]);
+			}).pipe(Effect.provide(harness.layer));
 		}),
 	);
 });

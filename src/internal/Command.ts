@@ -1,12 +1,20 @@
 import { Effect, Schema } from "effect";
 import { TmuxCommandOptionsError } from "../Errors.js";
 import {
+	type FormattedLinesOutput,
 	type OutputError,
 	type OutputResult,
 	resolveOutput,
 	type TmuxOutputAny,
 } from "./Output.js";
 import { TmuxProcess, type TmuxProcessRunError } from "./Process.js";
+import {
+	type FormattedArgs,
+	type FormattedCommandMeta,
+	type FormattedRecord,
+	IncludeVariablesField,
+	type TmuxVariable,
+} from "./Variables.js";
 
 const EmptyFlags = Schema.Struct({});
 
@@ -45,15 +53,32 @@ type ArgsFn<Options, Args extends ReadonlyArray<unknown>, A, E> =
 			) => Effect.Effect<A, E, TmuxProcess>;
 
 /**
- * The method shape a built command exposes. With no positional args, callers get
- * the existing `(options?)` shape; with positional args, options come last.
+ * Method shape for a formatted-lines command: generic over the caller's
+ * `includeVariables` array, so the record type widens and a typo is a compile
+ * error. Extends {@link FormattedCommandMeta} so the facades can rebuild it.
  */
-type CommandFn<
+export interface FormattedFn<
 	Options,
 	Args extends ReadonlyArray<unknown>,
-	A,
+	K extends TmuxVariable,
 	E,
-> = Args extends [] ? OptionsFn<Options, A, E> : ArgsFn<Options, Args, A, E>;
+> extends FormattedCommandMeta<Options, Args, K, E> {
+	<const Inc extends ReadonlyArray<TmuxVariable> = []>(
+		...args: FormattedArgs<Options, Args, Inc>
+	): Effect.Effect<ReadonlyArray<FormattedRecord<K, Inc>>, E, TmuxProcess>;
+}
+
+/**
+ * The method shape a built command exposes. Formatted-lines commands get the
+ * variable-aware generic shape; otherwise, with no positional args callers get
+ * the `(options?)` shape and with positional args options come last.
+ */
+type CommandFn<Options, Args extends ReadonlyArray<unknown>, O, E> =
+	O extends FormattedLinesOutput<infer K>
+		? FormattedFn<Options, Args, K, E>
+		: Args extends []
+			? OptionsFn<Options, OutputResult<O>, E>
+			: ArgsFn<Options, Args, OutputResult<O>, E>;
 
 const flattenFlagArgs = (encoded: object): ReadonlyArray<string> =>
 	Object.values(encoded).flatMap((value) =>
@@ -91,14 +116,24 @@ export const TmuxCommand = {
 	): CommandFn<
 		Flags["Type"],
 		Args,
-		OutputResult<O>,
+		O,
 		TmuxProcessRunError | OutputError<O> | TmuxCommandOptionsError
 	> => {
 		const flags = spec.flags ?? (EmptyFlags as unknown as Flags);
-		const encodeFlags = Schema.encodeUnknownEffect(flags, {
+		// Formatted commands accept `includeVariables`; mixing it into the flags
+		// struct lets the same encode pass validate variable names AND reject it as
+		// an excess property on non-formatted commands — no manual checks.
+		const encodeSchema =
+			spec.output.type === "formatted-lines"
+				? Schema.Struct({
+						...(flags as unknown as { fields: Schema.Struct.Fields }).fields,
+						includeVariables: IncludeVariablesField,
+					})
+				: flags;
+		const encodeFlags = Schema.encodeUnknownEffect(encodeSchema, {
 			onExcessProperty: "error",
 		});
-		const { formatArgs, decode } = resolveOutput(spec.output);
+		const resolved = resolveOutput(spec.output);
 		const commandArgs =
 			spec.args ??
 			(TmuxCommand.args(
@@ -114,8 +149,9 @@ export const TmuxCommand = {
 			while (rawPositionals.length > 0 && rawPositionals.at(-1) === undefined) {
 				rawPositionals.pop();
 			}
-			const options = input[commandArgs.count] as object | undefined;
-
+			const options = input[commandArgs.count] as
+				| Record<string, unknown>
+				| undefined;
 			const positionals = yield* commandArgs.decode(rawPositionals).pipe(
 				Effect.mapError(
 					(cause) =>
@@ -138,6 +174,12 @@ export const TmuxCommand = {
 				),
 			);
 
+			// Validated by the encode pass above; read the raw value to build `-F`.
+			const { formatArgs, decode } = resolved.resolve(
+				(options?.includeVariables as
+					| ReadonlyArray<TmuxVariable>
+					| undefined) ?? [],
+			);
 			const tmux = yield* TmuxProcess;
 			const args = [
 				spec.cmd,
@@ -154,7 +196,7 @@ export const TmuxCommand = {
 		return run as unknown as CommandFn<
 			Flags["Type"],
 			Args,
-			OutputResult<O>,
+			O,
 			TmuxProcessRunError | OutputError<O> | TmuxCommandOptionsError
 		>;
 	},

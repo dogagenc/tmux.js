@@ -6,9 +6,11 @@ import { TmuxOutput } from "../internal/Output.js";
 /**
  * Rename a tmux session (`tmux rename-session`).
  *
- * The required positional `newName` is the target name. Without `targetSession`,
- * the current/attached session is renamed; an unknown `targetSession` fails with
- * `TmuxTargetNotFound`. Resolves to an empty string on success.
+ * The required positional `newName` is the target name; without `targetSession`
+ * the current session is renamed (an unknown one fails with
+ * `TmuxTargetNotFound`).
+ *
+ * @returns An empty string on success.
  *
  * @example
  * ```ts
