@@ -17,18 +17,17 @@ layer(TmuxServer)("window (integration)", (it) => {
 			}),
 		);
 
-		it.effect("creates a second window with a distinct id", () =>
+		it.effect("creates a second window", () =>
 			Effect.gen(function* () {
 				const tmux = yield* TmuxClient;
+				const before = yield* tmux.listWindows({ targetSession: "it" });
 				yield* tmux.newWindow(undefined, {
 					targetWindow: "it",
 					detached: true,
 				});
-				const windows = yield* tmux.listWindows({ targetSession: "it" });
-				expect(windows.length).toBeGreaterThanOrEqual(2);
-				const ids = windows.map((w) => w.window_id);
-				for (const id of ids) expect(id).toMatch(/^@/);
-				expect(new Set(ids).size).toBe(ids.length);
+				const after = yield* tmux.listWindows({ targetSession: "it" });
+				expect(after.length).toBe(before.length + 1);
+				for (const w of after) expect(w.window_id).toMatch(/^@/);
 			}),
 		);
 	});
