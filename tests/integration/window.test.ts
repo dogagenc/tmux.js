@@ -28,6 +28,37 @@ layer(TmuxServer)("window (integration)", (it) => {
 				const after = yield* tmux.listWindows({ targetSession: "it" });
 				expect(after.length).toBe(before.length + 1);
 				for (const w of after) expect(w.window_id).toMatch(/^@/);
+				// restore the baseline so later tests start from one window
+				const extra = yield* Effect.fromOption(
+					Arr.findFirst(
+						after,
+						(w) => !before.some((b) => b.window_id === w.window_id),
+					),
+				);
+				yield* tmux.killWindow({ targetWindow: extra.window_id });
+			}),
+		);
+
+		it.effect("kills a window it opened", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const before = yield* tmux.listWindows({ targetSession: "it" });
+				expect(before.length).toBe(1);
+				yield* tmux.newWindow(undefined, {
+					targetWindow: "it",
+					detached: true,
+				});
+				const opened = yield* tmux.listWindows({ targetSession: "it" });
+				expect(opened.length).toBe(2);
+				const created = yield* Effect.fromOption(
+					Arr.findFirst(
+						opened,
+						(w) => !before.some((b) => b.window_id === w.window_id),
+					),
+				);
+				yield* tmux.killWindow({ targetWindow: created.window_id });
+				const after = yield* tmux.listWindows({ targetSession: "it" });
+				expect(after.length).toBe(1);
 			}),
 		);
 	});
