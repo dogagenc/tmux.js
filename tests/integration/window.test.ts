@@ -100,5 +100,39 @@ layer(TmuxServer)("window (integration)", (it) => {
 				yield* tmux.killWindow({ targetWindow: created.window_id });
 			}),
 		);
+
+		it.effect("lastWindow flips back to the previously selected window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const activeIndex = () =>
+					tmux.listWindows({ targetSession: "it" }).pipe(
+						Effect.flatMap((ws) =>
+							Effect.fromOption(Arr.findFirst(ws, (w) => w.window_active)),
+						),
+						Effect.map((w) => w.window_index),
+					);
+				const baseline = yield* tmux.listWindows({ targetSession: "it" });
+				const a = yield* tmux
+					.newWindow(undefined, { targetWindow: "it" })
+					.pipe(Effect.andThen(activeIndex()));
+				const b = yield* tmux
+					.newWindow(undefined, { targetWindow: "it" })
+					.pipe(Effect.andThen(activeIndex()));
+				expect(b).not.toBe(a);
+				yield* tmux.lastWindow({ targetSession: "it" });
+				expect(yield* activeIndex()).toBe(a);
+				const extras = yield* tmux
+					.listWindows({ targetSession: "it" })
+					.pipe(
+						Effect.map((ws) =>
+							ws.filter(
+								(w) => !baseline.some((b) => b.window_id === w.window_id),
+							),
+						),
+					);
+				for (const w of extras)
+					yield* tmux.killWindow({ targetWindow: w.window_id });
+			}),
+		);
 	});
 });
