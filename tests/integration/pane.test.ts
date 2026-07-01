@@ -1,6 +1,6 @@
 import { expect, layer } from "@effect/vitest";
 import { Array as Arr, Effect } from "effect";
-import { TmuxTargetNotFound } from "../../src/Errors";
+import { TmuxCommandError, TmuxTargetNotFound } from "../../src/Errors";
 import { TmuxClient } from "../../src/exports/effect";
 import { SessionFixture, TmuxServer } from "./util";
 
@@ -517,6 +517,36 @@ layer(TmuxServer)("pane (integration)", (it) => {
 					tmux.resizePane(undefined, { targetPane: "it.99" }),
 				);
 				expect(error).toBeInstanceOf(TmuxTargetNotFound);
+			}),
+		);
+
+		it.effect("respawn-pane needs -k while the command is still active", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const error = yield* Effect.flip(
+					tmux.respawnPane(undefined, { targetPane: "it" }),
+				);
+				expect(error).toBeInstanceOf(TmuxCommandError);
+				expect((error as TmuxCommandError).stderr).toContain("still active");
+			}),
+		);
+
+		it.effect("respawn-pane -k/-c/-e/-t respawns the target pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				// -k kills the live shell so the respawn succeeds; -c/-e apply to the
+				// new shell and -t picks the pane we then read back.
+				yield* tmux.respawnPane(undefined, {
+					kill: true,
+					startDirectory: "/",
+					environment: "FOO=bar",
+					targetPane: "it",
+				});
+				const cwd = yield* tmux.displayMessage("#{pane_current_path}", {
+					print: true,
+					targetPane: "it",
+				});
+				expect(cwd).toBe("/");
 			}),
 		);
 	});

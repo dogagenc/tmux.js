@@ -18,6 +18,7 @@ export * from "./pipePane.js";
 export * from "./renameSession.js";
 export * from "./renameWindow.js";
 export * from "./resizePane.js";
+export * from "./respawnPane.js";
 export * from "./setBuffer.js";
 export * from "./showBuffer.js";
 export * from "./splitWindow.js";
