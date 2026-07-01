@@ -25,18 +25,35 @@ describe("TmuxClient.rotateWindow", () => {
 		}).pipe(Effect.provide(tmuxFrom(empty))),
 	);
 
-	it.effect("emits the direction and zoom flags", () =>
+	it.effect("emits -D with the zoom and target flags", () =>
 		Effect.gen(function* () {
 			expect(
 				yield* captureArgs((tmux) =>
 					tmux.rotateWindow({
 						down: true,
-						up: true,
 						keepZoomed: true,
 						targetWindow: "work:1",
 					}),
 				),
-			).toEqual(["rotate-window", "-D", "-U", "-Z", "-t", "work:1"]);
+			).toEqual(["rotate-window", "-D", "-Z", "-t", "work:1"]);
+		}),
+	);
+
+	it.effect("emits -U", () =>
+		Effect.gen(function* () {
+			expect(
+				yield* captureArgs((tmux) => tmux.rotateWindow({ up: true })),
+			).toEqual(["rotate-window", "-U"]);
+		}),
+	);
+
+	it.effect("accepts an explicit false on the excluded direction", () =>
+		Effect.gen(function* () {
+			expect(
+				yield* captureArgs((tmux) =>
+					tmux.rotateWindow({ down: true, up: false }),
+				),
+			).toEqual(["rotate-window", "-D"]);
 		}),
 	);
 });
@@ -49,6 +66,20 @@ describe("argument validation (rotateWindow)", () => {
 				const tmux = yield* TmuxClient;
 				const error = yield* Effect.flip(
 					tmux.rotateWindow({ targetWindow: "" as never }),
+				);
+				expect(error).toBeInstanceOf(TmuxCommandOptionsError);
+				expect(harness.captured.args).toEqual([]);
+			}).pipe(Effect.provide(harness.layer));
+		}),
+	);
+
+	it.effect("rejects both down and up", () =>
+		Effect.gen(function* () {
+			const harness = capturingTmux(empty);
+			yield* Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const error = yield* Effect.flip(
+					tmux.rotateWindow({ down: true, up: true } as never),
 				);
 				expect(error).toBeInstanceOf(TmuxCommandOptionsError);
 				expect(harness.captured.args).toEqual([]);
