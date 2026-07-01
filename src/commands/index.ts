@@ -1,6 +1,7 @@
 export * from "./breakPane.js";
 export * from "./capturePane.js";
 export * from "./clearHistory.js";
+export * from "./deleteBuffer.js";
 export * from "./displayMessage.js";
 export * from "./hasSession.js";
 export * from "./joinPane.js";

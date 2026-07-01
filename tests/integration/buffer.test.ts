@@ -82,5 +82,32 @@ layer(TmuxServer)("buffer (integration)", (it) => {
 				expect(yield* fs.readFileString(file)).toBe("abab");
 			}).pipe(Effect.provide(NodeFileSystem.layer)),
 		);
+
+		it.effect("deleteBuffer({ bufferName }) removes the buffer", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.setBuffer("bye", { bufferName: "doomed" });
+				yield* tmux.deleteBuffer({ bufferName: "doomed" });
+				const error = yield* Effect.flip(
+					tmux.showBuffer({ bufferName: "doomed" }),
+				);
+				expect(error).toBeDefined();
+			}),
+		);
+
+		it.effect("deleteBuffer() deletes only the top auto-named buffer", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.setBuffer("named", { bufferName: "survivor" });
+				yield* tmux.setBuffer("auto");
+				expect(yield* tmux.showBuffer()).toBe("auto");
+				yield* tmux.deleteBuffer();
+				const gone = yield* Effect.flip(tmux.showBuffer());
+				expect(gone).toBeDefined();
+				expect(yield* tmux.showBuffer({ bufferName: "survivor" })).toBe(
+					"named",
+				);
+			}),
+		);
 	});
 });
