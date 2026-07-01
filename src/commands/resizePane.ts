@@ -28,10 +28,10 @@ export const resizePane = TmuxCommand.make("resizePane", {
 		right: TmuxFlag("-R", Schema.Boolean),
 		/** Toggle the active pane between zoomed and unzoomed (`-Z`). */
 		zoom: TmuxFlag("-Z", Schema.Boolean),
-		// ponytail: -M (mouse resizing) only valid in a mouse key binding, no
+		// -M (mouse resizing) only valid in a mouse key binding, no
 		// headless effect — defer until interactive support lands.
 		// mouse: TmuxFlag("-M", Schema.Boolean),
-		// ponytail: -T (trim below cursor) affects copy-mode/history only, no
+		// -T (trim below cursor) affects copy-mode/history only, no
 		// headless-observable stdout — defer until copy-mode support lands.
 		// trim: TmuxFlag("-T", Schema.Boolean),
 		/** Set absolute width in columns, or a percentage string ending in `%` (`-x`). */

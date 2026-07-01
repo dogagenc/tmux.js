@@ -27,7 +27,7 @@ export const respawnPane = TmuxCommand.make("respawnPane", {
 	}),
 	// single shell-command positional; variadic `argument ...` needs
 	// rest-positional + trailing-options core support — defer until needed.
-	// ponytail: -e is single-value here like every sibling (splitWindow/
+	// -e is single-value here like every sibling (splitWindow/
 	// newWindow/newSession); repeatable -e needs an array flag core lacks.
 	args: TmuxCommand.args(
 		1,
