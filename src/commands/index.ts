@@ -23,3 +23,4 @@ export * from "./selectPane.js";
 export * from "./setBuffer.js";
 export * from "./showBuffer.js";
 export * from "./splitWindow.js";
+export * from "./swapPane.js";

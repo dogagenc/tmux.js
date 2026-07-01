@@ -702,5 +702,124 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				expect(error).toBeInstanceOf(TmuxTargetNotFound);
 			}),
 		);
+
+		it.effect("swaps two panes' positions (-s/-t, listPanes order)", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const before = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(before.length).toBe(2);
+				yield* tmux.swapPane({
+					sourcePane: Arr.getUnsafe(before, 0).pane_id,
+					targetPane: Arr.getUnsafe(before, 1).pane_id,
+					detached: true,
+				});
+				const after = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(Arr.getUnsafe(after, 0).pane_id).toBe(
+					Arr.getUnsafe(before, 1).pane_id,
+				);
+				expect(Arr.getUnsafe(after, 1).pane_id).toBe(
+					Arr.getUnsafe(before, 0).pane_id,
+				);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("-d leaves the active pane unchanged after a swap", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const panes = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(panes.length).toBe(2);
+				const active = () =>
+					tmux
+						.listPanes({ targetWindow: "it" })
+						.pipe(
+							Effect.flatMap((p) =>
+								Effect.fromOption(Arr.findFirst(p, (x) => x.pane_active)),
+							),
+						);
+				const before = yield* active();
+				yield* tmux.swapPane({
+					sourcePane: Arr.getUnsafe(panes, 0).pane_id,
+					targetPane: Arr.getUnsafe(panes, 1).pane_id,
+					detached: true,
+				});
+				expect((yield* active()).pane_id).toBe(before.pane_id);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("-D and -U swap with the next and previous pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const before = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(before.length).toBe(2);
+				// -D swaps the first pane with the next (numerically higher)
+				yield* tmux.swapPane({
+					down: true,
+					detached: true,
+					targetPane: Arr.getUnsafe(before, 0).pane_id,
+				});
+				const mid = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(Arr.getUnsafe(mid, 0).pane_id).toBe(
+					Arr.getUnsafe(before, 1).pane_id,
+				);
+				expect(Arr.getUnsafe(mid, 1).pane_id).toBe(
+					Arr.getUnsafe(before, 0).pane_id,
+				);
+				// -U swaps the second pane with the previous (numerically lower)
+				yield* tmux.swapPane({
+					up: true,
+					detached: true,
+					targetPane: Arr.getUnsafe(mid, 1).pane_id,
+				});
+				const after = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(Arr.getUnsafe(after, 0).pane_id).toBe(
+					Arr.getUnsafe(before, 0).pane_id,
+				);
+				expect(Arr.getUnsafe(after, 1).pane_id).toBe(
+					Arr.getUnsafe(before, 1).pane_id,
+				);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("-Z preserves the window zoomed flag across a swap", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const before = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(before.length).toBe(2);
+				const zoomed = () =>
+					tmux.displayMessage("#{window_zoomed_flag}", {
+						print: true,
+						targetPane: "it",
+					});
+				yield* tmux.resizePane(undefined, { zoom: true, targetPane: "it" });
+				expect(yield* zoomed()).toBe("1");
+				yield* tmux.swapPane({
+					down: true,
+					keepZoomed: true,
+					detached: true,
+					targetPane: Arr.getUnsafe(before, 0).pane_id,
+				});
+				expect(yield* zoomed()).toBe("1");
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
 	});
 });
