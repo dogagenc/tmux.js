@@ -28,8 +28,8 @@ export const pasteBuffer = TmuxCommand.make("pasteBuffer", {
 		bufferName: TmuxFlag("-b", Schema.NonEmptyString),
 		/** Target pane to paste into (`-t`). */
 		targetPane: TmuxFlag("-t", Schema.NonEmptyString),
-		// ponytail: -p (bracketed) has no integration test — it only emits when
-		// the receiving app requests bracketed paste, which a headless shell never does.
+		// -p (bracketed) has no integration test — it only emits when the receiving
+		// app requests bracketed paste, which a headless shell never does.
 	}),
 	output: TmuxOutput.string(),
 });

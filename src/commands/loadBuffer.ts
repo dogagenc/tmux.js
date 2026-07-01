@@ -22,6 +22,8 @@ export const loadBuffer = TmuxCommand.make("loadBuffer", {
 		clipboard: TmuxFlag("-w", Schema.Boolean),
 		/** Target client for the clipboard escape (`-t`). */
 		targetClient: TmuxFlag("-t", Schema.NonEmptyString),
+		// -w/-t are client-only: unobservable headless until pty/client-attach
+		// support lands. Argv-covered in the unit test.
 	}),
 	// path is required; '-' reads from stdin.
 	args: TmuxCommand.args(1, Schema.Tuple([Schema.NonEmptyString]), (path) => [

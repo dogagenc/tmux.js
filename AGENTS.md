@@ -47,3 +47,11 @@ Minimum code that solves the problem. Nothing speculative.
   and report, don't wire it up.
 - If you write 200 lines and it could be 50, rewrite it.
 - Ask: "Would a senior engineer call this overcomplicated?" If yes, simplify.
+
+## 4. Comments
+
+Comments state rationale plainly and briefly — a line or two, not a paragraph.
+If a comment is longer than the code it explains, cut it.
+
+Never leave external-tool prefixes in committed code. Strip the `ponytail`
+keyword from any `ponytail:` comment, keeping only the plain rationale.
