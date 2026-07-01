@@ -13,5 +13,26 @@ layer(TmuxServer)("buffer (integration)", (it) => {
 				expect(out).toBe("x");
 			}),
 		);
+
+		it.effect("setBuffer -a appends to an existing buffer", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.setBuffer("x", { bufferName: "acc" });
+				yield* tmux.setBuffer("y", { bufferName: "acc", append: true });
+				expect(yield* tmux.showBuffer({ bufferName: "acc" })).toBe("xy");
+			}),
+		);
+
+		it.effect("setBuffer -n renames a buffer, keeping its content", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.setBuffer("keep", { bufferName: "before" });
+				yield* tmux.setBuffer(undefined, {
+					bufferName: "before",
+					newBufferName: "after",
+				});
+				expect(yield* tmux.showBuffer({ bufferName: "after" })).toBe("keep");
+			}),
+		);
 	});
 });

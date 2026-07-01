@@ -80,5 +80,25 @@ layer(TmuxServer)("window (integration)", (it) => {
 				});
 			}),
 		);
+
+		it.effect("listWindows -f filters by tmux expression", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newWindow(undefined, {
+					targetWindow: "it",
+					detached: true,
+					windowName: "keep",
+				});
+				const filtered = yield* tmux.listWindows({
+					targetSession: "it",
+					filter: "#{==:#{window_name},keep}",
+				});
+				expect(filtered.map((w) => w.window_name)).toEqual(["keep"]);
+				const created = yield* Effect.fromOption(
+					Arr.findFirst(filtered, (w) => w.window_name === "keep"),
+				);
+				yield* tmux.killWindow({ targetWindow: created.window_id });
+			}),
+		);
 	});
 });

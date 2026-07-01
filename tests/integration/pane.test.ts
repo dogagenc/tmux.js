@@ -58,6 +58,23 @@ layer(TmuxServer)("pane (integration)", (it) => {
 			}),
 		);
 
+		it.effect("splitWindow -c/-P/-F take effect on real tmux", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const line = yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+					startDirectory: "/",
+					print: true,
+					format: "#{pane_current_path}|#{pane_id}",
+				});
+				const [cwd, paneId] = line.split("|");
+				expect(cwd).toBe("/");
+				expect(paneId).toMatch(/^%\d+/);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
 		it.effect("killPane with killOthers collapses back to one pane", () =>
 			Effect.gen(function* () {
 				const tmux = yield* TmuxClient;

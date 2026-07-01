@@ -62,4 +62,24 @@ layer(TmuxServer)("session (integration)", (it) => {
 			expect(yield* tmux.hasSession({ targetSession: "keeper" })).toBe(true);
 		}),
 	);
+
+	it.effect("listSessions -f filters by tmux expression", () =>
+		Effect.gen(function* () {
+			const tmux = yield* TmuxClient;
+			yield* tmux.newSession(undefined, {
+				detached: true,
+				sessionName: "filterA",
+			});
+			yield* tmux.newSession(undefined, {
+				detached: true,
+				sessionName: "filterB",
+			});
+			const filtered = yield* tmux.listSessions({
+				filter: "#{==:#{session_name},filterA}",
+			});
+			expect(filtered.map((s) => s.session_name)).toEqual(["filterA"]);
+			yield* tmux.killSession({ targetSession: "filterA" });
+			yield* tmux.killSession({ targetSession: "filterB" });
+		}),
+	);
 });
