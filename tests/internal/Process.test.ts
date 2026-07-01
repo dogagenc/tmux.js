@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Effect, PlatformError } from "effect";
+import { Effect, Layer, PlatformError } from "effect";
 import {
 	TmuxCommandError,
 	TmuxExecutableNotFound,
@@ -7,8 +7,12 @@ import {
 	TmuxTargetNotFound,
 } from "../../src/Errors";
 import { TmuxClient } from "../../src/exports/effect";
+import { TmuxCommand } from "../../src/internal/Command";
+import { TmuxOutput } from "../../src/internal/Output";
+import { TmuxProcess } from "../../src/internal/Process";
 import {
 	encoder,
+	fakeHandle,
 	fakeHandleChunked,
 	fakeHandleFailingExit,
 	fakeHandleFailingStream,
@@ -202,5 +206,55 @@ describe("TmuxProcess spawn and stream failures", () => {
 					})(),
 				),
 			),
+	);
+});
+
+const hasSession = TmuxCommand.make("hasSession", {
+	cmd: "has-session",
+	output: TmuxOutput.boolFromExitCode(),
+});
+
+const processFrom = (opts: {
+	stdout: string;
+	stderr: string;
+	exitCode: number;
+}) => TmuxProcess.layer().pipe(Layer.provide(spawnerWith(fakeHandle(opts))));
+
+describe("boolFromExitCode (runBool)", () => {
+	it.effect("resolves true on a clean exit", () =>
+		Effect.gen(function* () {
+			expect(yield* hasSession()).toBe(true);
+		}).pipe(
+			Effect.provide(processFrom({ stdout: "", stderr: "", exitCode: 0 })),
+		),
+	);
+
+	it.effect("resolves false on a target-not-found exit", () =>
+		Effect.gen(function* () {
+			expect(yield* hasSession()).toBe(false);
+		}).pipe(
+			Effect.provide(
+				processFrom({
+					stdout: "",
+					stderr: "can't find session: missing_xyz",
+					exitCode: 1,
+				}),
+			),
+		),
+	);
+
+	it.effect("propagates a dead server instead of returning false", () =>
+		Effect.gen(function* () {
+			const error = yield* Effect.flip(hasSession());
+			expect(error._tag).toBe("TmuxServerNotRunning");
+		}).pipe(
+			Effect.provide(
+				processFrom({
+					stdout: "",
+					stderr: "no server running on /tmp/tmux-501/default",
+					exitCode: 1,
+				}),
+			),
+		),
 	);
 });

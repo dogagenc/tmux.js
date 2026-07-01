@@ -1,11 +1,10 @@
 import { Effect, Schema } from "effect";
-import { TmuxCommandOptionsError } from "../Errors.js";
-import {
-	type FormattedLinesOutput,
-	type OutputError,
-	type OutputResult,
-	resolveOutput,
-	type TmuxOutputAny,
+import { TmuxCommandOptionsError, type TmuxTargetNotFound } from "../Errors.js";
+import type {
+	FormattedLinesOutput,
+	OutputError,
+	OutputResult,
+	TmuxOutputAny,
 } from "./Output.js";
 import { TmuxProcess, type TmuxProcessRunError } from "./Process.js";
 import {
@@ -80,6 +79,14 @@ type CommandFn<Options, Args extends ReadonlyArray<unknown>, O, E> =
 			? OptionsFn<Options, OutputResult<O>, E>
 			: ArgsFn<Options, Args, OutputResult<O>, E>;
 
+/**
+ * The process error a command with output `O` surfaces. Exit-code outputs run via
+ * `runBool`, which absorbs target-not-found into `false`, so it's excluded here.
+ */
+type CommandRunError<O> = O extends { readonly type: "exit-code" }
+	? Exclude<TmuxProcessRunError, TmuxTargetNotFound>
+	: TmuxProcessRunError;
+
 const flattenFlagArgs = (encoded: object): ReadonlyArray<string> =>
 	Object.values(encoded).flatMap((value) =>
 		Array.isArray(value) ? value : [],
@@ -117,7 +124,7 @@ export const TmuxCommand = {
 		Flags["Type"],
 		Args,
 		O,
-		TmuxProcessRunError | OutputError<O> | TmuxCommandOptionsError
+		CommandRunError<O> | OutputError<O> | TmuxCommandOptionsError
 	> => {
 		const flags = spec.flags ?? (EmptyFlags as unknown as Flags);
 		// Formatted commands accept `includeVariables`; mixing it into the flags
@@ -133,7 +140,6 @@ export const TmuxCommand = {
 		const encodeFlags = Schema.encodeUnknownEffect(encodeSchema, {
 			onExcessProperty: "error",
 		});
-		const resolved = resolveOutput(spec.output);
 		const commandArgs =
 			spec.args ??
 			(TmuxCommand.args(
@@ -175,7 +181,7 @@ export const TmuxCommand = {
 			);
 
 			// Validated by the encode pass above; read the raw value to build `-F`.
-			const { formatArgs, decode } = resolved.resolve(
+			const { formatArgs, decode } = spec.output.resolve(
 				(options?.includeVariables as
 					| ReadonlyArray<TmuxVariable>
 					| undefined) ?? [],
@@ -187,6 +193,9 @@ export const TmuxCommand = {
 				...formatArgs,
 				...commandArgs.encode(...positionals),
 			];
+			if (spec.output.type === "exit-code") {
+				return yield* tmux.runBool(args);
+			}
 			const stdout = yield* tmux.run(args);
 			return yield* decode(stdout);
 		});
@@ -197,7 +206,7 @@ export const TmuxCommand = {
 			Flags["Type"],
 			Args,
 			O,
-			TmuxProcessRunError | OutputError<O> | TmuxCommandOptionsError
+			CommandRunError<O> | OutputError<O> | TmuxCommandOptionsError
 		>;
 	},
 };

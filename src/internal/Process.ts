@@ -1,4 +1,12 @@
-import { Context, Effect, Fiber, Layer, type Scope, Stream } from "effect";
+import {
+	Context,
+	Effect,
+	Fiber,
+	Layer,
+	Match,
+	type Scope,
+	Stream,
+} from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import {
 	TmuxCommandError,
@@ -9,10 +17,6 @@ import {
 } from "../Errors.js";
 import type { TmuxClientConfig } from "./Config.js";
 
-const NO_SERVER =
-	/no server running|error connecting to .*\(No such file or directory\)/i;
-const TARGET_NOT_FOUND = /can't find (session|window|pane|client):/i;
-
 export type TmuxProcessRunError =
 	| TmuxExecutableNotFound
 	| TmuxProcessError
@@ -21,24 +25,28 @@ export type TmuxProcessRunError =
 	| TmuxCommandError;
 
 /**
- * Classify a nonzero tmux exit from its stderr. Order matters: the no-server
- * rule must precede the target-not-found rule, because one no-server form
- * (`error connecting … (No such file or directory)`) also contains "No such".
- *
- * These patterns match tmux's English stderr (validated on tmux 3.6b). A
- * different tmux version or a non-English locale may word these differently, in
- * which case the line falls through to `TmuxCommandError` — the most likely
- * source of a "wrong error tag" report. Adjust the patterns, don't add silent
- * fallbacks.
+ * Map a nonzero tmux exit to a tagged error from its English stderr (tmux 3.6b).
+ * Order matters: no-server before target-not-found (a no-server form also contains
+ * "No such"). Unmatched stderr falls through to `TmuxCommandError`.
  */
-const classify = (
+const errorFromStderr = (
 	stderr: string,
 	exitCode: ChildProcessSpawner.ExitCode,
-): TmuxServerNotRunning | TmuxTargetNotFound | TmuxCommandError => {
-	if (NO_SERVER.test(stderr)) return new TmuxServerNotRunning({ stderr });
-	if (TARGET_NOT_FOUND.test(stderr)) return new TmuxTargetNotFound({ stderr });
-	return new TmuxCommandError({ stderr, exitCode });
-};
+): TmuxServerNotRunning | TmuxTargetNotFound | TmuxCommandError =>
+	Match.value(stderr).pipe(
+		Match.when(
+			(s) =>
+				/no server running|error connecting to .*\(No such file or directory\)/i.test(
+					s,
+				),
+			() => new TmuxServerNotRunning({ stderr }),
+		),
+		Match.when(
+			(s) => /can't find (session|window|pane|client):/i.test(s),
+			() => new TmuxTargetNotFound({ stderr }),
+		),
+		Match.orElse(() => new TmuxCommandError({ stderr, exitCode })),
+	);
 
 /** Decode a byte stream to text and collect it into a single string. */
 const collect = <E, R>(stream: Stream.Stream<Uint8Array, E, R>) =>
@@ -50,6 +58,12 @@ export class TmuxProcess extends Context.Service<
 		readonly run: (
 			args: ReadonlyArray<string>,
 		) => Effect.Effect<string, TmuxProcessRunError>;
+		readonly runBool: (
+			args: ReadonlyArray<string>,
+		) => Effect.Effect<
+			boolean,
+			Exclude<TmuxProcessRunError, TmuxTargetNotFound>
+		>;
 	}
 >()("tmux-js/TmuxProcess") {
 	static readonly layer = (options: TmuxClientConfig = {}) =>
@@ -64,13 +78,9 @@ export class TmuxProcess extends Context.Service<
 				const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
 
 				/**
-				 * Spawn `tmux <args>`, draining stdout and stderr concurrently (forking
-				 * both avoids a pipe-buffer deadlock), then classify the result by exit
-				 * code.
-				 *
-				 * Returns the raw stdout string on a clean exit (record/field splitting is
-				 * the caller's job, since a field value may contain newlines), otherwise
-				 * fails with a tagged error.
+				 * Spawn `tmux <args>`, draining stdout/stderr concurrently (forking both
+				 * avoids a pipe-buffer deadlock). Returns raw stdout on a clean exit; a
+				 * nonzero exit becomes a tagged error via `errorFromStderr`.
 				 */
 				const run = Effect.fn("TmuxProcess.run")(function* (
 					args: ReadonlyArray<string>,
@@ -110,12 +120,22 @@ export class TmuxProcess extends Context.Service<
 					);
 
 					if (exitCode !== ChildProcessSpawner.ExitCode(0)) {
-						return yield* classify(stderr, exitCode);
+						return yield* errorFromStderr(stderr, exitCode);
 					}
 					return stdout;
 				}, Effect.scoped);
 
-				return TmuxProcess.of({ run });
+				/**
+				 * Boolean predicate (e.g. `has-session`) from `run`: exit 0 → `true`,
+				 * target-not-found → `false`, any other error propagates (never a false).
+				 */
+				const runBool = (args: ReadonlyArray<string>) =>
+					run(args).pipe(
+						Effect.as(true),
+						Effect.catchTag("TmuxTargetNotFound", () => Effect.succeed(false)),
+					);
+
+				return TmuxProcess.of({ run, runBool });
 			}),
 		);
 }
