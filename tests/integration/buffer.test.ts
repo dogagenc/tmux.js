@@ -49,5 +49,38 @@ layer(TmuxServer)("buffer (integration)", (it) => {
 				);
 			}).pipe(Effect.provide(NodeFileSystem.layer)),
 		);
+
+		it.effect("saveBuffer('-', { bufferName }) prints buffer to stdout", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.setBuffer("printed", { bufferName: "out" });
+				expect(yield* tmux.saveBuffer("-", { bufferName: "out" })).toBe(
+					"printed",
+				);
+			}),
+		);
+
+		it.effect("saveBuffer writes a buffer to a file, resolving ''", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const fs = yield* FileSystem;
+				const file = yield* fs.makeTempFile();
+				yield* tmux.setBuffer("saved", { bufferName: "tofile" });
+				expect(yield* tmux.saveBuffer(file, { bufferName: "tofile" })).toBe("");
+				expect(yield* fs.readFileString(file)).toBe("saved");
+			}).pipe(Effect.provide(NodeFileSystem.layer)),
+		);
+
+		it.effect("saveBuffer -a appends to the file, doubling contents", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const fs = yield* FileSystem;
+				const file = yield* fs.makeTempFile();
+				yield* tmux.setBuffer("ab", { bufferName: "grow" });
+				yield* tmux.saveBuffer(file, { bufferName: "grow" });
+				yield* tmux.saveBuffer(file, { bufferName: "grow", append: true });
+				expect(yield* fs.readFileString(file)).toBe("abab");
+			}).pipe(Effect.provide(NodeFileSystem.layer)),
+		);
 	});
 });
