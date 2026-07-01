@@ -56,8 +56,8 @@ export const newSession = TmuxCommand.make("newSession", {
 		/** Height when detached; `-` uses the current client size (`-y`). */
 		height: TmuxFlag("-y", Schema.Union([Schema.Int, Schema.Literal("-")])),
 	}),
-	// single shell-command positional; variadic `argument ...` needs
-	// rest-positional + trailing-options core support — defer until needed.
+	// single shell-command string; the multi-arg argv form (`argument ...`)
+	// is intentionally not exposed — the shell string covers the common case.
 	args: TmuxCommand.args(
 		1,
 		Schema.Tuple([Schema.optionalKey(Schema.String)]),

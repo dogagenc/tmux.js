@@ -36,7 +36,7 @@ export const moveWindow = TmuxCommand.make("moveWindow", {
 				detached: TmuxFlag("-d", Schema.Boolean),
 				/** Destroy an existing window at the target index instead of failing (`-k`). */
 				destroyExisting: TmuxFlag("-k", Schema.Boolean),
-				/** Renumber windows sequentially, respecting base-index; ignores -s/-t (`-r`). */
+				/** Renumber windows in the session selected by -s/-t, closing index gaps (`-r`). */
 				renumber: TmuxFlag("-r", Schema.Boolean),
 				/** Source window to move (`-s`). */
 				sourceWindow: TmuxFlag("-s", Schema.NonEmptyString),

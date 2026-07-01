@@ -25,8 +25,8 @@ export const respawnPane = TmuxCommand.make("respawnPane", {
 		/** Target pane to respawn (`-t`). */
 		targetPane: TmuxFlag("-t", Schema.NonEmptyString),
 	}),
-	// single shell-command positional; variadic `argument ...` needs
-	// rest-positional + trailing-options core support — defer until needed.
+	// single shell-command string; the multi-arg argv form (`argument ...`)
+	// is intentionally not exposed — the shell string covers the common case.
 	// -e is single-value here like every sibling (splitWindow/
 	// newWindow/newSession); repeatable -e needs an array flag core lacks.
 	args: TmuxCommand.args(

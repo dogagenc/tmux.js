@@ -43,8 +43,8 @@ export const splitWindow = TmuxCommand.make("splitWindow", {
 		/** Target pane to split (`-t`). */
 		targetPane: TmuxFlag("-t", Schema.NonEmptyString),
 	}),
-	// single shell-command positional; variadic `argument ...` needs
-	// rest-positional + trailing-options core support — defer until needed.
+	// single shell-command string; the multi-arg argv form (`argument ...`)
+	// is intentionally not exposed — the shell string covers the common case.
 	// -I (empty pane + stdin forwarding) needs interactive stdin IO — deferred.
 	args: TmuxCommand.args(
 		1,
