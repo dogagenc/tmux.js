@@ -21,6 +21,7 @@ export * from "./renameWindow.js";
 export * from "./resizePane.js";
 export * from "./respawnPane.js";
 export * from "./selectPane.js";
+export * from "./sendKeys.js";
 export * from "./setBuffer.js";
 export * from "./showBuffer.js";
 export * from "./splitWindow.js";

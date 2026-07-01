@@ -845,5 +845,58 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				).toBe("");
 			}),
 		);
+
+		const settle = () =>
+			Effect.promise(() => new Promise((resolve) => setTimeout(resolve, 300)));
+
+		it.effect("send-keys -t/-N/-H types repeated hex chars into a pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const paneId = yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+					print: true,
+					format: "#{pane_id}",
+				});
+				// 0x7A is 'z'; repeated three times lands as 'zzz' at the prompt
+				yield* tmux.sendKeys("7A", {
+					hex: true,
+					repeatCount: 3,
+					targetPane: paneId,
+				});
+				yield* settle();
+				const text = yield* tmux.capturePane({
+					print: true,
+					targetPane: paneId,
+				});
+				expect(text).toContain("zzz");
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		// send-keys -F only expands formats "where appropriate" — for -X copy-mode
+		// command args, not plain key sends. On tmux 3.6b `send-keys -F '#{pane_id}'`
+		// types the literal string, so there is no headless-observable effect to
+		// assert here; -F argv coverage lives in the unit test.
+
+		it.effect("send-keys -l sends keys literally, not as a control key", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const paneId = yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+					print: true,
+					format: "#{pane_id}",
+				});
+				yield* tmux.sendKeys("C-a", { literal: true, targetPane: paneId });
+				yield* settle();
+				const text = yield* tmux.capturePane({
+					print: true,
+					targetPane: paneId,
+				});
+				expect(text).toContain("C-a");
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
 	});
 });
