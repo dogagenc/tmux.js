@@ -136,6 +136,28 @@ layer(TmuxServer)("window (integration)", (it) => {
 			}),
 		);
 
+		it.effect("next-layout changes the window layout", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const pane = yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+					print: true,
+					format: "#{pane_id}",
+				});
+				const layout = () =>
+					tmux.displayMessage("#{window_layout}", {
+						targetPane: "it",
+						print: true,
+					});
+				const before = yield* layout();
+				yield* tmux.nextLayout({ targetWindow: "it" });
+				const after = yield* layout();
+				expect(after).not.toBe(before);
+				yield* tmux.killPane({ targetPane: pane });
+			}),
+		);
+
 		it.effect("link-window -a links one index after dst-window", () =>
 			Effect.gen(function* () {
 				const tmux = yield* TmuxClient;

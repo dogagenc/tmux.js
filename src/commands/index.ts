@@ -18,6 +18,7 @@ export * from "./movePane.js";
 export * from "./moveWindow.js";
 export * from "./newSession.js";
 export * from "./newWindow.js";
+export * from "./nextLayout.js";
 export * from "./pipePane.js";
 export * from "./renameSession.js";
 export * from "./renameWindow.js";
