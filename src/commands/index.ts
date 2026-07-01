@@ -10,6 +10,7 @@ export * from "./killSession.js";
 export * from "./killWindow.js";
 export * from "./lastPane.js";
 export * from "./lastWindow.js";
+export * from "./linkWindow.js";
 export * from "./listPanes.js";
 export * from "./listSessions.js";
 export * from "./listWindows.js";

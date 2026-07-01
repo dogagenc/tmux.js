@@ -1,5 +1,6 @@
 import { expect, layer } from "@effect/vitest";
 import { Array as Arr, Effect } from "effect";
+import { TmuxCommandError } from "../../src/Errors";
 import { TmuxClient } from "../../src/exports/effect";
 import { SessionFixture, TmuxServer } from "./util";
 
@@ -132,6 +133,181 @@ layer(TmuxServer)("window (integration)", (it) => {
 					);
 				for (const w of extras)
 					yield* tmux.killWindow({ targetWindow: w.window_id });
+			}),
+		);
+
+		it.effect("link-window -a links one index after dst-window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "asrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "adst",
+				});
+				yield* tmux.newWindow(undefined, {
+					detached: true,
+					targetWindow: "adst",
+				});
+				const src = yield* tmux
+					.listWindows({ targetSession: "asrc" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				const dst = yield* tmux
+					.listWindows({ targetSession: "adst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				yield* tmux.linkWindow({
+					after: true,
+					detached: true,
+					sourceWindow: "asrc",
+					targetWindow: `adst:${dst.window_index}`,
+				});
+				const windows = yield* tmux.listWindows({ targetSession: "adst" });
+				const linked = yield* Effect.fromOption(
+					Arr.findFirst(windows, (w) => w.window_id === src.window_id),
+				);
+				expect(linked.window_index).toBe(dst.window_index + 1);
+				yield* tmux.killSession({ targetSession: "asrc" });
+				yield* tmux.killSession({ targetSession: "adst" });
+			}),
+		);
+
+		it.effect("link-window -b links one index before dst-window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "bsrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "bdst",
+				});
+				const src = yield* tmux
+					.listWindows({ targetSession: "bsrc" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				const dst = yield* tmux
+					.listWindows({ targetSession: "bdst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				yield* tmux.linkWindow({
+					before: true,
+					detached: true,
+					sourceWindow: "bsrc",
+					targetWindow: `bdst:${dst.window_index}`,
+				});
+				const windows = yield* tmux.listWindows({ targetSession: "bdst" });
+				const linked = yield* Effect.fromOption(
+					Arr.findFirst(windows, (w) => w.window_id === src.window_id),
+				);
+				expect(linked.window_index).toBe(dst.window_index);
+				yield* tmux.killSession({ targetSession: "bsrc" });
+				yield* tmux.killSession({ targetSession: "bdst" });
+			}),
+		);
+
+		it.effect("link-window -d leaves the previously active window active", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "dsrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "ddst",
+				});
+				const dst = yield* tmux
+					.listWindows({ targetSession: "ddst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				expect(dst.window_active).toBe(true);
+				yield* tmux.linkWindow({
+					after: true,
+					detached: true,
+					sourceWindow: "dsrc",
+					targetWindow: `ddst:${dst.window_index}`,
+				});
+				const active = yield* tmux
+					.listWindows({ targetSession: "ddst" })
+					.pipe(
+						Effect.flatMap((ws) =>
+							Effect.fromOption(Arr.findFirst(ws, (w) => w.window_active)),
+						),
+					);
+				expect(active.window_id).toBe(dst.window_id);
+				yield* tmux.killSession({ targetSession: "dsrc" });
+				yield* tmux.killSession({ targetSession: "ddst" });
+			}),
+		);
+
+		it.effect("link-window -k replaces an occupied index", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "ksrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "kdst",
+				});
+				const src = yield* tmux
+					.listWindows({ targetSession: "ksrc" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				const dst = yield* tmux
+					.listWindows({ targetSession: "kdst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				yield* tmux.linkWindow({
+					destroyExisting: true,
+					detached: true,
+					sourceWindow: "ksrc",
+					targetWindow: `kdst:${dst.window_index}`,
+				});
+				const atIndex = yield* tmux
+					.listWindows({ targetSession: "kdst" })
+					.pipe(
+						Effect.flatMap((ws) =>
+							Effect.fromOption(
+								Arr.findFirst(ws, (w) => w.window_index === dst.window_index),
+							),
+						),
+					);
+				expect(atIndex.window_id).not.toBe(dst.window_id);
+				expect(atIndex.window_id).toBe(src.window_id);
+				yield* tmux.killSession({ targetSession: "ksrc" });
+				yield* tmux.killSession({ targetSession: "kdst" });
+			}),
+		);
+
+		it.effect("link-window onto an occupied index without -k errors", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "esrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "edst",
+				});
+				const dst = yield* tmux
+					.listWindows({ targetSession: "edst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				const error = yield* Effect.flip(
+					tmux.linkWindow({
+						detached: true,
+						sourceWindow: "esrc",
+						targetWindow: `edst:${dst.window_index}`,
+					}),
+				);
+				expect(error).toBeInstanceOf(TmuxCommandError);
+				expect((error as TmuxCommandError).stderr).toContain("index in use");
+				const atIndex = yield* tmux
+					.listWindows({ targetSession: "edst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				expect(atIndex.window_id).toBe(dst.window_id);
+				yield* tmux.killSession({ targetSession: "esrc" });
+				yield* tmux.killSession({ targetSession: "edst" });
 			}),
 		);
 	});
