@@ -165,7 +165,6 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				expect(line).toMatch(/^it:\d+\.\d+$/);
 				const after = yield* tmux.listWindows({ targetSession: "it" });
 				expect(after.length).toBe(before.length + 1);
-				// -d left the original window active
 				const activeAfter = yield* Effect.fromOption(
 					Arr.findFirst(after, (w) => w.window_active),
 				);
@@ -330,8 +329,6 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				});
 				const after = yield* tmux.listPanes({ targetWindow: dst.pane_id });
 				expect(after.length).toBe(before.length + 1);
-				// -d left the source pane active untouched: the destination window's
-				// original pane is still the active one.
 				const active = yield* tmux
 					.listPanes({ targetWindow: dst.pane_id })
 					.pipe(
@@ -361,7 +358,6 @@ layer(TmuxServer)("pane (integration)", (it) => {
 					targetWindow: "it",
 					includeVariables: ["pane_left"],
 				});
-				// -h yields side-by-side panes: one sits to the right (pane_left > 0).
 				expect(panes.some((p) => p.pane_left > 0)).toBe(true);
 				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
 			}),
@@ -392,7 +388,6 @@ layer(TmuxServer)("pane (integration)", (it) => {
 					const moved = yield* Effect.fromOption(
 						Arr.findFirst(panes, (p) => p.pane_id === src.pane_id),
 					);
-					// -b + default vertical places the moved pane above the target.
 					expect(moved.pane_top).toBe(0);
 					expect(panes.some((p) => p.pane_top > 0)).toBe(true);
 					yield* tmux.killPane({ killOthers: true, targetPane: "it" });
@@ -419,7 +414,6 @@ layer(TmuxServer)("pane (integration)", (it) => {
 						targetPane: "it",
 					});
 					expect((yield* read()).pane_pipe).toBe(true);
-					// omitting the command closes the existing pipe
 					yield* tmux.pipePane(undefined, { targetPane: "it" });
 					expect((yield* read()).pane_pipe).toBe(false);
 				}),
@@ -534,8 +528,6 @@ layer(TmuxServer)("pane (integration)", (it) => {
 		it.effect("respawn-pane -k/-c/-e/-t respawns the target pane", () =>
 			Effect.gen(function* () {
 				const tmux = yield* TmuxClient;
-				// -k kills the live shell so the respawn succeeds; -c/-e apply to the
-				// new shell and -t picks the pane we then read back.
 				yield* tmux.respawnPane(undefined, {
 					kill: true,
 					startDirectory: "/",
@@ -765,7 +757,6 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				});
 				const before = yield* tmux.listPanes({ targetWindow: "it" });
 				expect(before.length).toBe(2);
-				// -D swaps the first pane with the next (numerically higher)
 				yield* tmux.swapPane({
 					down: true,
 					detached: true,
@@ -778,7 +769,6 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				expect(Arr.getUnsafe(mid, 1).pane_id).toBe(
 					Arr.getUnsafe(before, 0).pane_id,
 				);
-				// -U swaps the second pane with the previous (numerically lower)
 				yield* tmux.swapPane({
 					up: true,
 					detached: true,
@@ -822,12 +812,28 @@ layer(TmuxServer)("pane (integration)", (it) => {
 			}),
 		);
 
-		it.effect("clears the fixture pane history (-t) resolving empty", () =>
+		it.effect("clears pane history (-t): history_size drops to zero", () =>
 			Effect.gen(function* () {
 				const tmux = yield* TmuxClient;
-				// history bytes are volatile, so assert the -t path runs and
-				// resolves the empty success string, not a byte count.
+				yield* tmux.respawnPane("seq 1 50; sleep 100", {
+					kill: true,
+					targetPane: "it",
+				});
+				// real timer, not Effect.sleep: it.effect's TestClock never advances
+				// virtual time, and we must wait for tmux to render the output.
+				yield* Effect.promise(
+					() => new Promise((resolve) => setTimeout(resolve, 500)),
+				);
+				const size = () =>
+					tmux
+						.displayMessage("#{history_size}", {
+							print: true,
+							targetPane: "it",
+						})
+						.pipe(Effect.map(Number));
+				expect(yield* size()).toBeGreaterThan(0);
 				expect(yield* tmux.clearHistory({ targetPane: "it" })).toBe("");
+				expect(yield* size()).toBe(0);
 			}),
 		);
 
