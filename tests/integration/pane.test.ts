@@ -549,5 +549,158 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				expect(cwd).toBe("/");
 			}),
 		);
+
+		it.effect("selectPane -L/-R move the active pane horizontally", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					horizontal: true,
+					detached: true,
+				});
+				const panes = yield* tmux.listPanes({
+					targetWindow: "it",
+					includeVariables: ["pane_left"],
+				});
+				const leftPane = panes.reduce((a, b) =>
+					a.pane_left <= b.pane_left ? a : b,
+				);
+				const rightPane = panes.reduce((a, b) =>
+					a.pane_left >= b.pane_left ? a : b,
+				);
+				const active = () =>
+					tmux
+						.listPanes({ targetWindow: "it" })
+						.pipe(
+							Effect.flatMap((p) =>
+								Effect.fromOption(Arr.findFirst(p, (x) => x.pane_active)),
+							),
+						);
+				yield* tmux.selectPane({ targetPane: leftPane.pane_id });
+				expect((yield* active()).pane_id).toBe(leftPane.pane_id);
+				yield* tmux.selectPane({ right: true, targetPane: "it" });
+				expect((yield* active()).pane_id).toBe(rightPane.pane_id);
+				yield* tmux.selectPane({ left: true, targetPane: "it" });
+				expect((yield* active()).pane_id).toBe(leftPane.pane_id);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("selectPane -U/-D move the active pane vertically", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const panes = yield* tmux.listPanes({
+					targetWindow: "it",
+					includeVariables: ["pane_top"],
+				});
+				const topPane = panes.reduce((a, b) =>
+					a.pane_top <= b.pane_top ? a : b,
+				);
+				const bottomPane = panes.reduce((a, b) =>
+					a.pane_top >= b.pane_top ? a : b,
+				);
+				const active = () =>
+					tmux
+						.listPanes({ targetWindow: "it" })
+						.pipe(
+							Effect.flatMap((p) =>
+								Effect.fromOption(Arr.findFirst(p, (x) => x.pane_active)),
+							),
+						);
+				yield* tmux.selectPane({ targetPane: topPane.pane_id });
+				expect((yield* active()).pane_id).toBe(topPane.pane_id);
+				yield* tmux.selectPane({ down: true, targetPane: "it" });
+				expect((yield* active()).pane_id).toBe(bottomPane.pane_id);
+				yield* tmux.selectPane({ up: true, targetPane: "it" });
+				expect((yield* active()).pane_id).toBe(topPane.pane_id);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("selectPane -l restores the previously active pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const original = yield* tmux
+					.listPanes({ targetWindow: "it" })
+					.pipe(
+						Effect.flatMap((p) =>
+							Effect.fromOption(Arr.findFirst(p, (x) => x.pane_active)),
+						),
+					);
+				// splitting makes the new pane active, so the original is now "last"
+				yield* tmux.splitWindow(undefined, { targetPane: "it" });
+				yield* tmux.selectPane({ last: true, targetPane: "it" });
+				const active = yield* tmux
+					.listPanes({ targetWindow: "it" })
+					.pipe(
+						Effect.flatMap((p) =>
+							Effect.fromOption(Arr.findFirst(p, (x) => x.pane_active)),
+						),
+					);
+				expect(active.pane_id).toBe(original.pane_id);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("selectPane -d/-e toggle pane input", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const inputOff = () =>
+					tmux.displayMessage("#{pane_input_off}", {
+						print: true,
+						targetPane: "it",
+					});
+				yield* tmux.selectPane({ disableInput: true, targetPane: "it" });
+				expect(yield* inputOff()).toBe("1");
+				yield* tmux.selectPane({ enableInput: true, targetPane: "it" });
+				expect(yield* inputOff()).toBe("0");
+			}),
+		);
+
+		it.effect("selectPane -m/-M mark and clear the marked pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.selectPane({ mark: true, targetPane: "it" });
+				expect(
+					yield* tmux.displayMessage("#{pane_marked}", {
+						print: true,
+						targetPane: "it",
+					}),
+				).toBe("1");
+				yield* tmux.selectPane({ clearMarked: true });
+				expect(
+					yield* tmux.displayMessage("#{pane_marked_set}", {
+						print: true,
+						targetPane: "it",
+					}),
+				).toBe("0");
+			}),
+		);
+
+		it.effect("selectPane -T sets the pane title", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.selectPane({ title: "hello", targetPane: "it" });
+				const title = yield* tmux.displayMessage("#{pane_title}", {
+					print: true,
+					targetPane: "it",
+				});
+				expect(title).toBe("hello");
+			}),
+		);
+
+		it.effect("fails to select an unknown target pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const error = yield* Effect.flip(
+					tmux.selectPane({ targetPane: "it.99" }),
+				);
+				expect(error).toBeInstanceOf(TmuxTargetNotFound);
+			}),
+		);
 	});
 });
