@@ -921,5 +921,79 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
 			}),
 		);
+
+		it.effect("respawn-window needs -k while the command is still active", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const error = yield* Effect.flip(
+					tmux.respawnWindow(undefined, { targetWindow: "it" }),
+				);
+				expect(error).toBeInstanceOf(TmuxCommandError);
+				expect((error as TmuxCommandError).stderr).toContain("still active");
+			}),
+		);
+
+		it.effect("respawn-window -k/-c/-t respawns the target window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const windowId = yield* tmux.newWindow(undefined, {
+					windowName: "victim",
+					detached: true,
+					print: true,
+					format: "#{window_id}",
+				});
+				const before = yield* tmux.displayMessage("#{pane_current_command}", {
+					print: true,
+					targetPane: windowId,
+				});
+				expect(before).not.toBe("sleep");
+				yield* tmux.respawnWindow("sleep 100", {
+					kill: true,
+					startDirectory: "/",
+					targetWindow: windowId,
+				});
+				const path = yield* tmux.displayMessage("#{pane_current_path}", {
+					print: true,
+					targetPane: windowId,
+				});
+				expect(path).toBe("/");
+				const command = yield* tmux.displayMessage("#{pane_current_command}", {
+					print: true,
+					targetPane: windowId,
+				});
+				expect(command).toBe("sleep");
+				yield* tmux.killWindow({ targetWindow: windowId });
+			}),
+		);
+
+		it.effect("respawn-window -e injects an environment variable", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.respawnWindow("sh -c 'printenv FOO; sleep 100'", {
+					kill: true,
+					environment: "FOO=bar",
+					targetWindow: "it",
+				});
+				yield* settle();
+				const text = yield* tmux.capturePane({ print: true, targetPane: "it" });
+				expect(text).toContain("bar");
+			}),
+		);
+
+		it.effect("fails to respawn an unknown target window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const error = yield* Effect.flip(
+					tmux.respawnWindow(undefined, {
+						kill: true,
+						targetWindow: "no-such",
+					}),
+				);
+				expect(error).toBeInstanceOf(TmuxTargetNotFound);
+				expect((error as TmuxTargetNotFound).stderr).toContain(
+					"can't find window",
+				);
+			}),
+		);
 	});
 });
