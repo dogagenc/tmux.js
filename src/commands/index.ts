@@ -39,3 +39,4 @@ export * from "./showBuffer.js";
 export * from "./splitWindow.js";
 export * from "./swapPane.js";
 export * from "./swapWindow.js";
+export * from "./unlinkWindow.js";

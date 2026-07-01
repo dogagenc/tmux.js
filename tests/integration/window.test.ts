@@ -1047,5 +1047,116 @@ layer(TmuxServer)("window (integration)", (it) => {
 				yield* tmux.killSession({ targetSession: "swf" });
 			}),
 		);
+
+		it.effect("unlink-window -k destroys a single-linked window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "uwk",
+				});
+				const before = yield* tmux.listWindows({ targetSession: "uwk" });
+				yield* tmux.newWindow(undefined, {
+					detached: true,
+					targetWindow: "uwk",
+				});
+				const created = yield* tmux
+					.listWindows({ targetSession: "uwk" })
+					.pipe(
+						Effect.flatMap((ws) =>
+							Effect.fromOption(
+								Arr.findFirst(
+									ws,
+									(w) => !before.some((b) => b.window_id === w.window_id),
+								),
+							),
+						),
+					);
+				yield* tmux.unlinkWindow({
+					destroy: true,
+					targetWindow: created.window_id,
+				});
+				const after = yield* tmux.listWindows({ targetSession: "uwk" });
+				expect(after.some((w) => w.window_id === created.window_id)).toBe(
+					false,
+				);
+				yield* tmux.killSession({ targetSession: "uwk" });
+			}),
+		);
+
+		it.effect("unlink-window without -k errors on a single-linked window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "uwe",
+				});
+				const before = yield* tmux.listWindows({ targetSession: "uwe" });
+				yield* tmux.newWindow(undefined, {
+					detached: true,
+					targetWindow: "uwe",
+				});
+				const created = yield* tmux
+					.listWindows({ targetSession: "uwe" })
+					.pipe(
+						Effect.flatMap((ws) =>
+							Effect.fromOption(
+								Arr.findFirst(
+									ws,
+									(w) => !before.some((b) => b.window_id === w.window_id),
+								),
+							),
+						),
+					);
+				const error = yield* Effect.flip(
+					tmux.unlinkWindow({ targetWindow: created.window_id }),
+				);
+				expect(error).toBeInstanceOf(TmuxCommandError);
+				expect((error as TmuxCommandError).stderr).toContain(
+					"window only linked to one session",
+				);
+				yield* tmux.killSession({ targetSession: "uwe" });
+			}),
+		);
+
+		it.effect("unlink-window -t removes a shared window from one session", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "uwsa",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "uwsb",
+				});
+				const src = yield* tmux
+					.listWindows({ targetSession: "uwsa" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				yield* tmux.linkWindow({
+					detached: true,
+					sourceWindow: "uwsa",
+					targetWindow: "uwsb:9",
+				});
+				const linked = yield* tmux
+					.listWindows({ targetSession: "uwsb" })
+					.pipe(
+						Effect.flatMap((ws) =>
+							Effect.fromOption(
+								Arr.findFirst(ws, (w) => w.window_id === src.window_id),
+							),
+						),
+					);
+				yield* tmux.unlinkWindow({
+					targetWindow: `uwsb:${linked.window_index}`,
+				});
+				const uwsb = yield* tmux.listWindows({ targetSession: "uwsb" });
+				expect(uwsb.some((w) => w.window_id === src.window_id)).toBe(false);
+				const uwsa = yield* tmux.listWindows({ targetSession: "uwsa" });
+				expect(uwsa.some((w) => w.window_id === src.window_id)).toBe(true);
+				yield* tmux.killSession({ targetSession: "uwsa" });
+				yield* tmux.killSession({ targetSession: "uwsb" });
+			}),
+		);
 	});
 });
