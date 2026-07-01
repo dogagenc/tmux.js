@@ -1,5 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
 import { Effect, Layer } from "effect";
+import { Path } from "effect/Path";
 import { TmuxClient } from "../../src/exports/effect";
 
 const socketName = () =>
@@ -8,7 +9,13 @@ const socketName = () =>
 // A fresh isolated client per build: a unique `-L` socket, never the user's
 // default server, so an in-tmux test run is safe.
 const isolatedClient = Layer.unwrap(
-	Effect.sync(() => TmuxClient.layer({ socketName: socketName() })),
+	Effect.gen(function* () {
+		const path = yield* Path;
+		return TmuxClient.layer({
+			socketName: socketName(),
+			configFile: path.resolve("tests/integration/empty_tmux.conf"),
+		});
+	}),
 ).pipe(Layer.provide(NodeServices.layer));
 
 // Kill the whole server on group teardown, whatever the tests left behind
