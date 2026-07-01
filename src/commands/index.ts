@@ -26,6 +26,7 @@ export * from "./previousWindow.js";
 export * from "./renameSession.js";
 export * from "./renameWindow.js";
 export * from "./resizePane.js";
+export * from "./resizeWindow.js";
 export * from "./respawnPane.js";
 export * from "./selectPane.js";
 export * from "./sendKeys.js";

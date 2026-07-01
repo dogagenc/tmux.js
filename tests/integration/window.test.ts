@@ -666,5 +666,140 @@ layer(TmuxServer)("window (integration)", (it) => {
 				yield* tmux.killSession({ targetSession: "mrsess" });
 			}),
 		);
+
+		const windowSize = (target: string) =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				return yield* tmux
+					.listWindows({
+						targetSession: target,
+						includeVariables: ["window_width", "window_height"],
+					})
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+			});
+
+		it.effect("resize-window -x/-y set absolute width and height", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "rwxy",
+					width: 200,
+					height: 50,
+				});
+				yield* tmux.resizeWindow(undefined, {
+					width: 120,
+					height: 40,
+					targetWindow: "rwxy",
+				});
+				const after = yield* windowSize("rwxy");
+				expect(after.window_width).toBe(120);
+				expect(after.window_height).toBe(40);
+				yield* tmux.killSession({ targetSession: "rwxy" });
+			}),
+		);
+
+		it.effect("resize-window -U/-D adjust window_height", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "rwud",
+					width: 200,
+					height: 50,
+				});
+				yield* tmux.resizeWindow(5, { up: true, targetWindow: "rwud" });
+				expect((yield* windowSize("rwud")).window_height).toBe(45);
+				yield* tmux.resizeWindow(2, { down: true, targetWindow: "rwud" });
+				expect((yield* windowSize("rwud")).window_height).toBe(47);
+				yield* tmux.killSession({ targetSession: "rwud" });
+			}),
+		);
+
+		it.effect("resize-window -L/-R adjust window_width", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "rwlr",
+					width: 200,
+					height: 50,
+				});
+				yield* tmux.resizeWindow(5, { left: true, targetWindow: "rwlr" });
+				expect((yield* windowSize("rwlr")).window_width).toBe(195);
+				yield* tmux.resizeWindow(5, { right: true, targetWindow: "rwlr" });
+				expect((yield* windowSize("rwlr")).window_width).toBe(200);
+				yield* tmux.killSession({ targetSession: "rwlr" });
+			}),
+		);
+
+		it.effect("resize-window -a/-A settle to the client size", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "rwaa",
+					width: 200,
+					height: 50,
+				});
+				yield* tmux.resizeWindow(undefined, {
+					width: 120,
+					height: 40,
+					targetWindow: "rwaa",
+				});
+				yield* tmux.resizeWindow(undefined, {
+					smallest: true,
+					targetWindow: "rwaa",
+				});
+				const smallest = yield* windowSize("rwaa");
+				expect(smallest.window_width).toBe(200);
+				expect(smallest.window_height).toBe(50);
+				yield* tmux.resizeWindow(undefined, {
+					width: 120,
+					height: 40,
+					targetWindow: "rwaa",
+				});
+				yield* tmux.resizeWindow(undefined, {
+					largest: true,
+					targetWindow: "rwaa",
+				});
+				const largest = yield* windowSize("rwaa");
+				expect(largest.window_width).toBe(200);
+				expect(largest.window_height).toBe(50);
+				yield* tmux.killSession({ targetSession: "rwaa" });
+			}),
+		);
+
+		it.effect("resize-window -t resizes only the named window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "rwt",
+					width: 200,
+					height: 50,
+				});
+				yield* tmux.newWindow(undefined, {
+					detached: true,
+					targetWindow: "rwt",
+					windowName: "probe",
+				});
+				yield* tmux.resizeWindow(undefined, {
+					width: 120,
+					targetWindow: "rwt:probe",
+				});
+				const windows = yield* tmux.listWindows({
+					targetSession: "rwt",
+					includeVariables: ["window_width"],
+				});
+				const probe = yield* Effect.fromOption(
+					Arr.findFirst(windows, (w) => w.window_name === "probe"),
+				);
+				expect(probe.window_width).toBe(120);
+				for (const w of windows)
+					if (w.window_name !== "probe") expect(w.window_width).toBe(200);
+				yield* tmux.killSession({ targetSession: "rwt" });
+			}),
+		);
 	});
 });
