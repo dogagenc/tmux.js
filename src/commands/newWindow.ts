@@ -22,12 +22,12 @@ export const newWindow = TmuxCommand.make("newWindow", {
 		Schema.Struct({
 			/** Insert the new window after `targetWindow`, moving later windows up (`-a`). */
 			after: TmuxFlag("-a", Schema.Boolean),
-			before: Schema.optional(Schema.Never),
+			before: Schema.optional(Schema.Literal(false)),
 		}),
 		Schema.Struct({
 			/** Insert the new window before `targetWindow`, moving later windows up (`-b`). */
 			before: TmuxFlag("-b", Schema.Boolean),
-			after: Schema.optional(Schema.Never),
+			after: Schema.optional(Schema.Literal(false)),
 		}),
 	]).mapMembers(
 		Tuple.map(

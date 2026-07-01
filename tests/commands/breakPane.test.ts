@@ -110,4 +110,14 @@ describe("argument validation (breakPane)", () => {
 			}).pipe(Effect.provide(harness.layer));
 		}),
 	);
+
+	it.effect("accepts an explicit false for the excluded member", () =>
+		Effect.gen(function* () {
+			expect(
+				yield* captureArgs((tmux) =>
+					tmux.breakPane({ after: true, before: false }),
+				),
+			).toEqual(["break-pane", "-a"]);
+		}),
+	);
 });

@@ -22,12 +22,12 @@ export const breakPane = TmuxCommand.make("breakPane", {
 		Schema.Struct({
 			/** Move the new window to the index after `dstWindow` (`-a`). */
 			after: TmuxFlag("-a", Schema.Boolean),
-			before: Schema.optional(Schema.Never),
+			before: Schema.optional(Schema.Literal(false)),
 		}),
 		Schema.Struct({
 			/** Move the new window to the index before `dstWindow` (`-b`). */
 			before: TmuxFlag("-b", Schema.Boolean),
-			after: Schema.optional(Schema.Never),
+			after: Schema.optional(Schema.Literal(false)),
 		}),
 	]).mapMembers(
 		Tuple.map(
