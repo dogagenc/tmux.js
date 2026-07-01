@@ -90,4 +90,32 @@ describe("argument validation (moveWindow)", () => {
 			}).pipe(Effect.provide(harness.layer));
 		}),
 	);
+
+	it.effect("rejects after and before together before spawning tmux", () =>
+		Effect.gen(function* () {
+			const harness = capturingTmux(empty);
+			yield* Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const error = yield* Effect.flip(
+					tmux.moveWindow({ after: true, before: true } as never),
+				);
+				expect(error).toBeInstanceOf(TmuxCommandOptionsError);
+				expect(harness.captured.args).toEqual([]);
+			}).pipe(Effect.provide(harness.layer));
+		}),
+	);
+
+	it.effect("accepts an explicit false for the excluded member", () =>
+		Effect.gen(function* () {
+			expect(
+				yield* captureArgs((tmux) =>
+					tmux.moveWindow({
+						after: true,
+						before: false,
+						targetWindow: "other:2",
+					}),
+				),
+			).toEqual(["move-window", "-a", "-t", "other:2"]);
+		}),
+	);
 });
