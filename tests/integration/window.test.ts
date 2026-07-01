@@ -941,5 +941,111 @@ layer(TmuxServer)("window (integration)", (it) => {
 					yield* tmux.killWindow({ targetWindow: w.window_id });
 			}),
 		);
+
+		it.effect("swap-window -s/-t exchanges window_id at src/dst indices", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "sws",
+				});
+				yield* tmux.newWindow(undefined, {
+					detached: true,
+					targetWindow: "sws",
+				});
+				const before = yield* tmux.listWindows({ targetSession: "sws" });
+				expect(before.length).toBe(2);
+				const src = Arr.getUnsafe(before, 0);
+				const dst = Arr.getUnsafe(before, 1);
+				yield* tmux.swapWindow({
+					detached: true,
+					sourceWindow: `sws:${src.window_index}`,
+					targetWindow: `sws:${dst.window_index}`,
+				});
+				const after = yield* tmux.listWindows({ targetSession: "sws" });
+				const atSrc = yield* Effect.fromOption(
+					Arr.findFirst(after, (w) => w.window_index === src.window_index),
+				);
+				const atDst = yield* Effect.fromOption(
+					Arr.findFirst(after, (w) => w.window_index === dst.window_index),
+				);
+				expect(atSrc.window_id).toBe(dst.window_id);
+				expect(atDst.window_id).toBe(src.window_id);
+				yield* tmux.killSession({ targetSession: "sws" });
+			}),
+		);
+
+		it.effect(
+			"swap-window -d moves the active window to the swapped index",
+			() =>
+				Effect.gen(function* () {
+					const tmux = yield* TmuxClient;
+					yield* tmux.newSession(undefined, {
+						detached: true,
+						sessionName: "swd",
+					});
+					yield* tmux.newWindow(undefined, {
+						detached: true,
+						targetWindow: "swd",
+					});
+					const activeWindow = () =>
+						tmux
+							.listWindows({ targetSession: "swd" })
+							.pipe(
+								Effect.flatMap((ws) =>
+									Effect.fromOption(Arr.findFirst(ws, (w) => w.window_active)),
+								),
+							);
+					const before = yield* tmux.listWindows({ targetSession: "swd" });
+					const src = yield* activeWindow();
+					const dst = yield* Effect.fromOption(
+						Arr.findFirst(before, (w) => w.window_id !== src.window_id),
+					);
+					yield* tmux.swapWindow({
+						detached: true,
+						sourceWindow: `swd:${src.window_index}`,
+						targetWindow: `swd:${dst.window_index}`,
+					});
+					const after = yield* activeWindow();
+					expect(after.window_id).toBe(src.window_id);
+					expect(after.window_index).toBe(dst.window_index);
+					yield* tmux.killSession({ targetSession: "swd" });
+				}),
+		);
+
+		it.effect("swap-window without -d keeps the active flag on its index", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "swf",
+				});
+				yield* tmux.newWindow(undefined, {
+					detached: true,
+					targetWindow: "swf",
+				});
+				const activeWindow = () =>
+					tmux
+						.listWindows({ targetSession: "swf" })
+						.pipe(
+							Effect.flatMap((ws) =>
+								Effect.fromOption(Arr.findFirst(ws, (w) => w.window_active)),
+							),
+						);
+				const before = yield* tmux.listWindows({ targetSession: "swf" });
+				const src = yield* activeWindow();
+				const dst = yield* Effect.fromOption(
+					Arr.findFirst(before, (w) => w.window_id !== src.window_id),
+				);
+				yield* tmux.swapWindow({
+					sourceWindow: `swf:${src.window_index}`,
+					targetWindow: `swf:${dst.window_index}`,
+				});
+				const after = yield* activeWindow();
+				expect(after.window_index).toBe(src.window_index);
+				expect(after.window_id).toBe(dst.window_id);
+				yield* tmux.killSession({ targetSession: "swf" });
+			}),
+		);
 	});
 });
