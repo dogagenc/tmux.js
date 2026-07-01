@@ -15,6 +15,9 @@ Other examples: `fix(flag): reject empty target`, `test(integration): add pane s
 `docs: simplify command jsdoc`. Stage an explicit file allowlist; keep each
 commit self-consistent (command + its test + the export line together).
 
+Never commit unless told. When changes are ready, say so and propose a commit
+message — let the user commit.
+
 ## 2. Don't assume. Don't hide confusion. Surface tradeoffs.
 
 Do not just agree with the user. If a claim looks wrong, **stop and say so** —
