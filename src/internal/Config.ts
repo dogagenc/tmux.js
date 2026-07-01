@@ -27,6 +27,8 @@ export const TmuxClientConfig = Schema.Union([
 		Schema.fieldsAssign({
 			/** tmux binary to invoke. Defaults to `"tmux"` resolved from `PATH`. */
 			executable: Schema.optional(Schema.NonEmptyString),
+			/** Config file to load at server start, passed as `tmux -f <path>`. */
+			configFile: Schema.optional(Schema.NonEmptyString),
 		}),
 	),
 );

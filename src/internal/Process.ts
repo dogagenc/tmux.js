@@ -74,6 +74,7 @@ export class TmuxProcess extends Context.Service<
 				const globalArgs = [
 					...(options.socketName ? ["-L", options.socketName] : []),
 					...(options.socketPath ? ["-S", options.socketPath] : []),
+					...(options.configFile ? ["-f", options.configFile] : []),
 				];
 				const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
 
