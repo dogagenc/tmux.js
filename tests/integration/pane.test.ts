@@ -57,5 +57,20 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				for (const p of after) expect(p.pane_id).toMatch(/^%/);
 			}),
 		);
+
+		it.effect("killPane with killOthers collapses back to one pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const seeded = yield* tmux.listPanes({ all: true });
+				expect(seeded.length).toBeGreaterThan(1);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+				const after = yield* tmux.listPanes({ all: true });
+				expect(after.length).toBe(1);
+			}),
+		);
 	});
 });
