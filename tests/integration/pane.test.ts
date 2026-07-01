@@ -135,5 +135,180 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
 			}),
 		);
+
+		// break-pane: split the fixture window first so "it" keeps a pane, then
+		// break the inactive one off into a new window. Cleanup kills any window
+		it.effect("breaks a pane into a new window (-s, -d, default -P line)", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const before = yield* tmux.listWindows({ targetSession: "it" });
+				const activeBefore = yield* Effect.fromOption(
+					Arr.findFirst(before, (w) => w.window_active),
+				);
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const extra = yield* tmux
+					.listPanes({ targetWindow: "it" })
+					.pipe(
+						Effect.flatMap((p) =>
+							Effect.fromOption(Arr.findFirst(p, (x) => !x.pane_active)),
+						),
+					);
+				const line = yield* tmux.breakPane({
+					srcPane: extra.pane_id,
+					detached: true,
+					print: true,
+				});
+				expect(line).toMatch(/^it:\d+\.\d+$/);
+				const after = yield* tmux.listWindows({ targetSession: "it" });
+				expect(after.length).toBe(before.length + 1);
+				// -d left the original window active
+				const activeAfter = yield* Effect.fromOption(
+					Arr.findFirst(after, (w) => w.window_active),
+				);
+				expect(activeAfter.window_id).toBe(activeBefore.window_id);
+				for (const w of after)
+					if (!before.some((b) => b.window_id === w.window_id))
+						yield* tmux.killWindow({ targetWindow: w.window_id });
+			}),
+		);
+
+		it.effect("break-pane -F returns the custom format", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const extra = yield* tmux
+					.listPanes({ targetWindow: "it" })
+					.pipe(
+						Effect.flatMap((p) =>
+							Effect.fromOption(Arr.findFirst(p, (x) => !x.pane_active)),
+						),
+					);
+				const line = yield* tmux.breakPane({
+					srcPane: extra.pane_id,
+					detached: true,
+					print: true,
+					format: "#{window_id} #{pane_id}",
+				});
+				const [windowId, paneId] = line.split(" ");
+				expect(windowId).toMatch(/^@\d+$/);
+				expect(paneId).toMatch(/^%\d+$/);
+				yield* tmux.killWindow({ targetWindow: windowId });
+			}),
+		);
+
+		it.effect("break-pane -n names the new window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const extra = yield* tmux
+					.listPanes({ targetWindow: "it" })
+					.pipe(
+						Effect.flatMap((p) =>
+							Effect.fromOption(Arr.findFirst(p, (x) => !x.pane_active)),
+						),
+					);
+				yield* tmux.breakPane({
+					srcPane: extra.pane_id,
+					detached: true,
+					windowName: "broken",
+				});
+				const windows = yield* tmux.listWindows({ targetSession: "it" });
+				const named = yield* Effect.fromOption(
+					Arr.findFirst(windows, (w) => w.window_name === "broken"),
+				);
+				expect(named.window_name).toBe("broken");
+				yield* tmux.killWindow({ targetWindow: named.window_id });
+			}),
+		);
+
+		it.effect("break-pane -a/-t place the new window after the target", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const before = yield* tmux.listWindows({ targetSession: "it" });
+				const dstIndex = Number(
+					yield* tmux.newWindow(undefined, {
+						detached: true,
+						print: true,
+						format: "#{window_index}",
+					}),
+				);
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const extra = yield* tmux
+					.listPanes({ targetWindow: "it" })
+					.pipe(
+						Effect.flatMap((p) =>
+							Effect.fromOption(Arr.findFirst(p, (x) => !x.pane_active)),
+						),
+					);
+				const newIndex = Number(
+					yield* tmux.breakPane({
+						srcPane: extra.pane_id,
+						detached: true,
+						after: true,
+						dstWindow: `it:${dstIndex}`,
+						print: true,
+						format: "#{window_index}",
+					}),
+				);
+				expect(newIndex).toBe(dstIndex + 1);
+				const after = yield* tmux.listWindows({ targetSession: "it" });
+				for (const w of after)
+					if (!before.some((b) => b.window_id === w.window_id))
+						yield* tmux.killWindow({ targetWindow: w.window_id });
+			}),
+		);
+
+		it.effect("break-pane -b/-t place the new window before the target", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const before = yield* tmux.listWindows({ targetSession: "it" });
+				const dstIndex = Number(
+					yield* tmux.newWindow(undefined, {
+						detached: true,
+						print: true,
+						format: "#{window_index}",
+					}),
+				);
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const extra = yield* tmux
+					.listPanes({ targetWindow: "it" })
+					.pipe(
+						Effect.flatMap((p) =>
+							Effect.fromOption(Arr.findFirst(p, (x) => !x.pane_active)),
+						),
+					);
+				// -b takes the target's index; the target shifts up by one
+				const newIndex = Number(
+					yield* tmux.breakPane({
+						srcPane: extra.pane_id,
+						detached: true,
+						before: true,
+						dstWindow: `it:${dstIndex}`,
+						print: true,
+						format: "#{window_index}",
+					}),
+				);
+				expect(newIndex).toBe(dstIndex);
+				const after = yield* tmux.listWindows({ targetSession: "it" });
+				for (const w of after)
+					if (!before.some((b) => b.window_id === w.window_id))
+						yield* tmux.killWindow({ targetWindow: w.window_id });
+			}),
+		);
 	});
 });
