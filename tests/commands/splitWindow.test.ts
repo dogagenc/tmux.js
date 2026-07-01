@@ -54,6 +54,38 @@ describe("TmuxClient.splitWindow", () => {
 			).toEqual(["split-window", "-Z", "htop"]);
 		}),
 	);
+
+	it.effect(
+		"emits before, environment, full, vertical, print, cwd, format",
+		() =>
+			Effect.gen(function* () {
+				expect(
+					yield* captureArgs((tmux) =>
+						tmux.splitWindow(undefined, {
+							before: true,
+							environment: "A=b",
+							full: true,
+							vertical: true,
+							print: true,
+							startDirectory: "/",
+							format: "#{pane_id}",
+						}),
+					),
+				).toEqual([
+					"split-window",
+					"-b",
+					"-e",
+					"A=b",
+					"-f",
+					"-v",
+					"-P",
+					"-c",
+					"/",
+					"-F",
+					"#{pane_id}",
+				]);
+			}),
+	);
 });
 
 describe("argument validation (splitWindow)", () => {

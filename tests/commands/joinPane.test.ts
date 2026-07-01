@@ -50,6 +50,16 @@ describe("TmuxClient.joinPane", () => {
 			]);
 		}),
 	);
+
+	it.effect("emits before, full, and vertical flags", () =>
+		Effect.gen(function* () {
+			expect(
+				yield* captureArgs((tmux) =>
+					tmux.joinPane({ before: true, full: true, vertical: true }),
+				),
+			).toEqual(["join-pane", "-b", "-f", "-v"]);
+		}),
+	);
 });
 
 describe("argument validation (joinPane)", () => {

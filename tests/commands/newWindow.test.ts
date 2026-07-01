@@ -56,6 +56,36 @@ describe("TmuxClient.newWindow", () => {
 			).toEqual(["new-window", "-n", "mon", "htop"]);
 		}),
 	);
+
+	it.effect("emits the before member and shared flags in struct order", () =>
+		Effect.gen(function* () {
+			expect(
+				yield* captureArgs((tmux) =>
+					tmux.newWindow(undefined, {
+						before: true,
+						destroyExisting: true,
+						print: true,
+						selectExisting: true,
+						startDirectory: "/",
+						environment: "A=b",
+						format: "#{window_id}",
+					}),
+				),
+			).toEqual([
+				"new-window",
+				"-b",
+				"-k",
+				"-P",
+				"-S",
+				"-c",
+				"/",
+				"-e",
+				"A=b",
+				"-F",
+				"#{window_id}",
+			]);
+		}),
+	);
 });
 
 describe("argument validation (newWindow)", () => {

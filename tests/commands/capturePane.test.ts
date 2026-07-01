@@ -80,6 +80,16 @@ describe("TmuxClient.capturePane", () => {
 			]);
 		}),
 	);
+
+	it.effect("print mode emits -p", () =>
+		Effect.gen(function* () {
+			expect(
+				yield* captureArgs((tmux) =>
+					tmux.capturePane({ print: true, targetPane: "%1" }),
+				),
+			).toEqual(["capture-pane", "-p", "-t", "%1"]);
+		}),
+	);
 });
 
 describe("options validation (capturePane)", () => {

@@ -66,6 +66,18 @@ describe("TmuxClient.setBuffer", () => {
 			).toEqual(["set-buffer", "-a", "x"]);
 		}),
 	);
+
+	it.effect(
+		"setBuffer(data, { clipboard, targetClient }) emits -w and -t",
+		() =>
+			Effect.gen(function* () {
+				expect(
+					yield* captureArgs((tmux) =>
+						tmux.setBuffer("x", { clipboard: true, targetClient: "c0" }),
+					),
+				).toEqual(["set-buffer", "-w", "-t", "c0", "x"]);
+			}),
+	);
 });
 
 describe("options validation (setBuffer)", () => {
