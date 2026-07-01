@@ -397,5 +397,31 @@ layer(TmuxServer)("pane (integration)", (it) => {
 					yield* tmux.killPane({ killOthers: true, targetPane: "it" });
 				}),
 		);
+
+		it.effect(
+			"opens and closes a pipe on the pane (-I/-O/-o/-t, pane_pipe)",
+			() =>
+				Effect.gen(function* () {
+					const tmux = yield* TmuxClient;
+					const read = () =>
+						tmux
+							.listPanes({
+								targetWindow: "it",
+								includeVariables: ["pane_pipe"],
+							})
+							.pipe(Effect.flatMap((p) => Effect.fromOption(Arr.head(p))));
+					expect((yield* read()).pane_pipe).toBe(false);
+					yield* tmux.pipePane("cat > /dev/null", {
+						input: true,
+						output: true,
+						onlyOpen: true,
+						targetPane: "it",
+					});
+					expect((yield* read()).pane_pipe).toBe(true);
+					// omitting the command closes the existing pipe
+					yield* tmux.pipePane(undefined, { targetPane: "it" });
+					expect((yield* read()).pane_pipe).toBe(false);
+				}),
+		);
 	});
 });

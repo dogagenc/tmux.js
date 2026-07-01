@@ -56,6 +56,7 @@ export const TmuxVariables = {
 	pane_id: Schema.String,
 	pane_active: BooleanFromBitString,
 	pane_dead: BooleanFromBitString,
+	pane_pipe: BooleanFromBitString,
 } as const;
 
 /** A known tmux format variable name (a key of {@link TmuxVariables}). */

@@ -34,6 +34,7 @@ const PaneStruct = variableStruct([
 	"pane_id",
 	"pane_active",
 	"pane_dead",
+	"pane_pipe",
 ]);
 const US = "\x1f";
 
@@ -141,6 +142,7 @@ describe("pane variable codec", () => {
 		pane_id: "%3",
 		pane_active: true,
 		pane_dead: false,
+		pane_pipe: true,
 	};
 
 	it.effect("decodes finite numbers, pane_id string, and bit booleans", () =>
@@ -157,6 +159,7 @@ describe("pane variable codec", () => {
 				"%3",
 				"1",
 				"0",
+				"1",
 			];
 			expect(yield* decodeLine(PaneStruct)(line.join(US))).toEqual(object);
 		}),

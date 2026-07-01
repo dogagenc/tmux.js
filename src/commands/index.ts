@@ -14,6 +14,7 @@ export * from "./listWindows.js";
 export * from "./movePane.js";
 export * from "./newSession.js";
 export * from "./newWindow.js";
+export * from "./pipePane.js";
 export * from "./renameSession.js";
 export * from "./renameWindow.js";
 export * from "./setBuffer.js";
