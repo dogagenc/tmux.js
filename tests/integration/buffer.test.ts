@@ -1,5 +1,7 @@
+import { NodeFileSystem } from "@effect/platform-node";
 import { expect, layer } from "@effect/vitest";
 import { Effect } from "effect";
+import { FileSystem } from "effect/FileSystem";
 import { TmuxClient } from "../../src/exports/effect";
 import { SessionFixture, TmuxServer } from "./util";
 
@@ -33,6 +35,19 @@ layer(TmuxServer)("buffer (integration)", (it) => {
 				});
 				expect(yield* tmux.showBuffer({ bufferName: "after" })).toBe("keep");
 			}),
+		);
+
+		it.effect("loadBuffer reads a file into a named buffer", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const fs = yield* FileSystem;
+				const file = yield* fs.makeTempFile();
+				yield* fs.writeFileString(file, "loaded from file");
+				yield* tmux.loadBuffer(file, { bufferName: "mybuf" });
+				expect(yield* tmux.showBuffer({ bufferName: "mybuf" })).toBe(
+					"loaded from file",
+				);
+			}).pipe(Effect.provide(NodeFileSystem.layer)),
 		);
 	});
 });

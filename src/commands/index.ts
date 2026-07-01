@@ -14,6 +14,7 @@ export * from "./linkWindow.js";
 export * from "./listPanes.js";
 export * from "./listSessions.js";
 export * from "./listWindows.js";
+export * from "./loadBuffer.js";
 export * from "./movePane.js";
 export * from "./moveWindow.js";
 export * from "./newSession.js";
