@@ -1,5 +1,6 @@
 import { expect, layer } from "@effect/vitest";
 import { Array as Arr, Effect } from "effect";
+import { TmuxTargetNotFound } from "../../src/Errors";
 import { TmuxClient } from "../../src/exports/effect";
 import { SessionFixture, TmuxServer } from "./util";
 
@@ -422,6 +423,101 @@ layer(TmuxServer)("pane (integration)", (it) => {
 					yield* tmux.pipePane(undefined, { targetPane: "it" });
 					expect((yield* read()).pane_pipe).toBe(false);
 				}),
+		);
+
+		it.effect("resizes a pane's dimensions with a direction (-D)", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				// a vertical split gives the pane a neighbor to grow into
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const read = () =>
+					tmux
+						.listPanes({
+							targetWindow: "it",
+							includeVariables: ["pane_height"],
+						})
+						.pipe(Effect.flatMap((p) => Effect.fromOption(Arr.head(p))));
+				const before = (yield* read()).pane_height;
+				yield* tmux.resizePane(3, { down: true, targetPane: "it" });
+				const after = (yield* read()).pane_height;
+				expect(after).not.toBe(before);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("resizes a pane to an absolute height (-y)", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				yield* tmux.resizePane(undefined, { height: 8, targetPane: "it" });
+				const pane = yield* tmux
+					.listPanes({
+						targetWindow: "it",
+						includeVariables: ["pane_height"],
+					})
+					.pipe(Effect.flatMap((p) => Effect.fromOption(Arr.head(p))));
+				expect(pane.pane_height).toBe(8);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("resizes a pane to an absolute width (-x)", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				// a horizontal split gives side-by-side panes with width to spare
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					horizontal: true,
+					detached: true,
+				});
+				yield* tmux.resizePane(undefined, { width: 20, targetPane: "it" });
+				const pane = yield* tmux
+					.listPanes({
+						targetWindow: "it",
+						includeVariables: ["pane_width"],
+					})
+					.pipe(Effect.flatMap((p) => Effect.fromOption(Arr.head(p))));
+				expect(pane.pane_width).toBe(20);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("toggles the zoomed flag with -Z", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				// zoom only applies with more than one pane in the window
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const zoomed = () =>
+					tmux.displayMessage("#{window_zoomed_flag}", {
+						print: true,
+						targetPane: "it",
+					});
+				expect(yield* zoomed()).toBe("0");
+				yield* tmux.resizePane(undefined, { zoom: true, targetPane: "it" });
+				expect(yield* zoomed()).toBe("1");
+				yield* tmux.resizePane(undefined, { zoom: true, targetPane: "it" });
+				expect(yield* zoomed()).toBe("0");
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("fails to resize an unknown target pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const error = yield* Effect.flip(
+					tmux.resizePane(undefined, { targetPane: "it.99" }),
+				);
+				expect(error).toBeInstanceOf(TmuxTargetNotFound);
+			}),
 		);
 	});
 });
