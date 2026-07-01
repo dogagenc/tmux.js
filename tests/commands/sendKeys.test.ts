@@ -21,7 +21,7 @@ describe("TmuxClient.sendKeys", () => {
 	it.effect("resolves to an empty string", () =>
 		Effect.gen(function* () {
 			const tmux = yield* TmuxClient;
-			expect(yield* tmux.sendKeys("C-a", { targetPane: "it" })).toBe("");
+			expect(yield* tmux.sendKeys(["C-a"], { targetPane: "it" })).toBe("");
 		}).pipe(Effect.provide(tmuxFrom(empty))),
 	);
 
@@ -29,23 +29,36 @@ describe("TmuxClient.sendKeys", () => {
 		Effect.gen(function* () {
 			expect(
 				yield* captureArgs((tmux) =>
-					tmux.sendKeys(undefined, {
+					tmux.sendKeys([], {
 						expandFormats: true,
 						hex: true,
 						literal: true,
+						reset: true,
 						repeatCount: 3,
 						targetPane: "sess:1.1",
 					}),
 				),
-			).toEqual(["send-keys", "-F", "-H", "-l", "-N", "3", "-t", "sess:1.1"]);
+			).toEqual([
+				"send-keys",
+				"-F",
+				"-H",
+				"-l",
+				"-N",
+				"3",
+				"-t",
+				"sess:1.1",
+				"-R",
+			]);
 		}),
 	);
 
-	it.effect("emits the key positional after flags", () =>
+	it.effect("emits multiple key positionals after flags", () =>
 		Effect.gen(function* () {
 			expect(
-				yield* captureArgs((tmux) => tmux.sendKeys("x", { repeatCount: 2 })),
-			).toEqual(["send-keys", "-N", "2", "x"]);
+				yield* captureArgs((tmux) =>
+					tmux.sendKeys(["echo hi", "Enter"], { repeatCount: 2 }),
+				),
+			).toEqual(["send-keys", "-N", "2", "echo hi", "Enter"]);
 		}),
 	);
 });
@@ -57,7 +70,7 @@ describe("argument validation (sendKeys)", () => {
 			yield* Effect.gen(function* () {
 				const tmux = yield* TmuxClient;
 				const error = yield* Effect.flip(
-					tmux.sendKeys("x", { targetPane: "" as never }),
+					tmux.sendKeys(["x"], { targetPane: "" as never }),
 				);
 				expect(error).toBeInstanceOf(TmuxCommandOptionsError);
 				expect(harness.captured.args).toEqual([]);

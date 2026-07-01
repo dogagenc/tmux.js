@@ -859,7 +859,7 @@ layer(TmuxServer)("pane (integration)", (it) => {
 					format: "#{pane_id}",
 				});
 				// 0x7A is 'z'; repeated three times lands as 'zzz' at the prompt
-				yield* tmux.sendKeys("7A", {
+				yield* tmux.sendKeys(["7A"], {
 					hex: true,
 					repeatCount: 3,
 					targetPane: paneId,
@@ -888,13 +888,36 @@ layer(TmuxServer)("pane (integration)", (it) => {
 					print: true,
 					format: "#{pane_id}",
 				});
-				yield* tmux.sendKeys("C-a", { literal: true, targetPane: paneId });
+				yield* tmux.sendKeys(["C-a"], { literal: true, targetPane: paneId });
 				yield* settle();
 				const text = yield* tmux.capturePane({
 					print: true,
 					targetPane: paneId,
 				});
 				expect(text).toContain("C-a");
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("send-keys types a text-and-Enter sequence in one call", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const paneId = yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+					print: true,
+					format: "#{pane_id}",
+				});
+				yield* tmux.sendKeys(["echo $((6*7))", "Enter"], {
+					targetPane: paneId,
+				});
+				yield* settle();
+				const text = yield* tmux.capturePane({
+					print: true,
+					targetPane: paneId,
+				});
+				// 42 appears only if the whole array typed and Enter ran the command
+				expect(text).toContain("42");
 				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
 			}),
 		);

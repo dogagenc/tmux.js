@@ -10,7 +10,7 @@ import { TmuxOutput } from "../internal/Output.js";
  *
  * @example
  * ```ts
- * await tmux.sendKeys("C-a", { targetPane: "work:1.1" });
+ * await tmux.sendKeys(["echo hi", "Enter"], { targetPane: "work:1.1" });
  * ```
  */
 export const sendKeys = TmuxCommand.make("sendKeys", {
@@ -26,22 +26,22 @@ export const sendKeys = TmuxCommand.make("sendKeys", {
 		repeatCount: TmuxFlag("-N", Schema.Int),
 		/** Target pane to receive the keys (`-t`). */
 		targetPane: TmuxFlag("-t", Schema.NonEmptyString),
-		// -K (send to client key table), -c (target-client), and -R (reset
-		// terminal) have no deterministic headless effect — defer.
+		/** Reset the pane's terminal state before sending (`-R`). */
+		reset: TmuxFlag("-R", Schema.Boolean),
+		// -K (send to client key table) and -c (target-client) need an attached
+		// client, so there is no headless effect — defer.
 		// key: TmuxFlag("-K", Schema.Boolean),
 		// targetClient: TmuxFlag("-c", Schema.NonEmptyString),
-		// reset: TmuxFlag("-R", Schema.Boolean),
 		// -M (mouse passthrough) and -X (copy-mode command) only work inside a
 		// mouse/copy-mode binding — defer until interactive support lands.
 		// mouse: TmuxFlag("-M", Schema.Boolean),
 		// copyMode: TmuxFlag("-X", Schema.Boolean),
 	}),
-	// single key positional; the variadic `key ...` needs rest-positional +
-	// trailing-options core support — defer until needed.
+	// variadic `key ...` modeled as one array positional; encode spreads it into argv.
 	args: TmuxCommand.args(
 		1,
-		Schema.Tuple([Schema.optionalKey(Schema.String)]),
-		(key) => (key === undefined ? [] : [key]),
+		Schema.Tuple([Schema.Array(Schema.NonEmptyString)]),
+		(keys) => keys,
 	),
 	output: TmuxOutput.string(),
 });
