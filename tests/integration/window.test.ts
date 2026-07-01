@@ -61,5 +61,24 @@ layer(TmuxServer)("window (integration)", (it) => {
 				expect(after.length).toBe(1);
 			}),
 		);
+
+		it.effect("renames a window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const before = yield* tmux
+					.listWindows({ targetSession: "it" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				yield* tmux.renameWindow("renamed", { targetWindow: "it" });
+				const after = yield* tmux
+					.listWindows({ targetSession: "it" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				expect(after.window_name).toBe("renamed");
+				expect(after.window_name).not.toBe(before.window_name);
+				// restore the baseline name for later tests
+				yield* tmux.renameWindow(before.window_name, {
+					targetWindow: "it",
+				});
+			}),
+		);
 	});
 });
