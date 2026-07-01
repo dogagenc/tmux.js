@@ -821,5 +821,23 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
 			}),
 		);
+
+		it.effect("clears the fixture pane history (-t) resolving empty", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				// history bytes are volatile, so assert the -t path runs and
+				// resolves the empty success string, not a byte count.
+				expect(yield* tmux.clearHistory({ targetPane: "it" })).toBe("");
+			}),
+		);
+
+		it.effect("clears history and hyperlinks (-H) resolving empty", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				expect(
+					yield* tmux.clearHistory({ clearHyperlinks: true, targetPane: "it" }),
+				).toBe("");
+			}),
+		);
 	});
 });
