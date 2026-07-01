@@ -262,6 +262,103 @@ layer(TmuxServer)("window (integration)", (it) => {
 			}),
 		);
 
+		it.effect("select-layout -n/-p change the window layout", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const pane = yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+					print: true,
+					format: "#{pane_id}",
+				});
+				const layout = () =>
+					tmux.displayMessage("#{window_layout}", {
+						targetPane: "it",
+						print: true,
+					});
+				const before = yield* layout();
+				yield* tmux.selectLayout(undefined, { next: true, targetPane: "it" });
+				const afterNext = yield* layout();
+				expect(afterNext).not.toBe(before);
+				yield* tmux.selectLayout(undefined, {
+					previous: true,
+					targetPane: "it",
+				});
+				expect(yield* layout()).not.toBe(afterNext);
+				yield* tmux.killPane({ targetPane: pane });
+			}),
+		);
+
+		it.effect("select-layout -o undoes the most recent layout change", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const pane = yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+					print: true,
+					format: "#{pane_id}",
+				});
+				const layout = () =>
+					tmux.displayMessage("#{window_layout}", {
+						targetPane: "it",
+						print: true,
+					});
+				yield* tmux.selectLayout("even-horizontal", { targetPane: "it" });
+				const before = yield* layout();
+				yield* tmux.selectLayout("even-vertical", { targetPane: "it" });
+				expect(yield* layout()).not.toBe(before);
+				yield* tmux.selectLayout(undefined, { undo: true, targetPane: "it" });
+				expect(yield* layout()).toBe(before);
+				yield* tmux.killPane({ targetPane: pane });
+			}),
+		);
+
+		it.effect("select-layout -E settles the window layout to a string", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const pane = yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+					print: true,
+					format: "#{pane_id}",
+				});
+				yield* tmux.selectLayout(undefined, {
+					spreadEvenly: true,
+					targetPane: "it",
+				});
+				const layout = yield* tmux.displayMessage("#{window_layout}", {
+					targetPane: "it",
+					print: true,
+				});
+				expect(layout.length).toBeGreaterThan(0);
+				yield* tmux.killPane({ targetPane: pane });
+			}),
+		);
+
+		it.effect(
+			"select-layout layoutName -t applies a preset to the pane's window",
+			() =>
+				Effect.gen(function* () {
+					const tmux = yield* TmuxClient;
+					const pane = yield* tmux.splitWindow(undefined, {
+						targetPane: "it",
+						detached: true,
+						print: true,
+						format: "#{pane_id}",
+					});
+					const layout = () =>
+						tmux.displayMessage("#{window_layout}", {
+							targetPane: "it",
+							print: true,
+						});
+					yield* tmux.selectLayout("even-horizontal", { targetPane: "it" });
+					const horizontal = yield* layout();
+					yield* tmux.selectLayout("even-vertical", { targetPane: "it" });
+					expect(yield* layout()).not.toBe(horizontal);
+					yield* tmux.killPane({ targetPane: pane });
+				}),
+		);
+
 		it.effect("link-window -a links one index after dst-window", () =>
 			Effect.gen(function* () {
 				const tmux = yield* TmuxClient;
