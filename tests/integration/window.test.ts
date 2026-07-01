@@ -136,6 +136,46 @@ layer(TmuxServer)("window (integration)", (it) => {
 			}),
 		);
 
+		it.effect("nextWindow moves to the next window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const activeIndex = () =>
+					tmux.listWindows({ targetSession: "it" }).pipe(
+						Effect.flatMap((ws) =>
+							Effect.fromOption(Arr.findFirst(ws, (w) => w.window_active)),
+						),
+						Effect.map((w) => w.window_index),
+					);
+				const baseline = yield* tmux.listWindows({ targetSession: "it" });
+				yield* tmux.newWindow(undefined, { targetWindow: "it" });
+				const before = yield* activeIndex();
+				yield* tmux.nextWindow({ targetSession: "it" });
+				expect(yield* activeIndex()).not.toBe(before);
+				const extras = yield* tmux
+					.listWindows({ targetSession: "it" })
+					.pipe(
+						Effect.map((ws) =>
+							ws.filter(
+								(w) => !baseline.some((b) => b.window_id === w.window_id),
+							),
+						),
+					);
+				for (const w of extras)
+					yield* tmux.killWindow({ targetWindow: w.window_id });
+			}),
+		);
+
+		it.effect("nextWindow -a errors when no window has an alert", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const error = yield* Effect.flip(
+					tmux.nextWindow({ alert: true, targetSession: "it" }),
+				);
+				expect(error).toBeInstanceOf(TmuxCommandError);
+				expect((error as TmuxCommandError).stderr).toContain("no next window");
+			}),
+		);
+
 		it.effect("next-layout changes the window layout", () =>
 			Effect.gen(function* () {
 				const tmux = yield* TmuxClient;
