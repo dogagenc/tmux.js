@@ -6,6 +6,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
 	test: {
 		include: ["tests/integration/**/*.test.ts"],
+		// Run files serially: each spawns a real tmux server, and parallel load
+		// occasionally makes a tmux command return empty stdout (flaky assertions).
+		fileParallelism: false,
 		testTimeout: 15_000,
 		hookTimeout: 15_000,
 	},
