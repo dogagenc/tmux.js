@@ -72,5 +72,26 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				expect(after.length).toBe(1);
 			}),
 		);
+
+		it.effect("joins a pane from another window into the fixture window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const dst = yield* tmux
+					.listPanes({ all: true })
+					.pipe(Effect.flatMap((p) => Effect.fromOption(Arr.head(p))));
+				const before = yield* tmux.listPanes({ targetWindow: dst.pane_id });
+				yield* tmux.newWindow(undefined, {
+					windowName: "src",
+					detached: true,
+				});
+				yield* tmux.joinPane({
+					sourcePane: "it:src",
+					targetPane: dst.pane_id,
+					detached: true,
+				});
+				const after = yield* tmux.listPanes({ targetWindow: dst.pane_id });
+				expect(after.length).toBe(before.length + 1);
+			}),
+		);
 	});
 });

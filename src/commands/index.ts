@@ -1,6 +1,7 @@
 export * from "./capturePane.js";
 export * from "./displayMessage.js";
 export * from "./hasSession.js";
+export * from "./joinPane.js";
 export * from "./killPane.js";
 export * from "./killServer.js";
 export * from "./killSession.js";
