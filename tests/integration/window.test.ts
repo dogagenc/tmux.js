@@ -310,5 +310,235 @@ layer(TmuxServer)("window (integration)", (it) => {
 				yield* tmux.killSession({ targetSession: "edst" });
 			}),
 		);
+
+		it.effect("move-window -s/-t moves src to the requested index", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "msrc",
+				});
+				yield* tmux.newWindow(undefined, {
+					detached: true,
+					targetWindow: "msrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "mdst",
+				});
+				const src = yield* tmux
+					.listWindows({ targetSession: "msrc" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				yield* tmux.moveWindow({
+					detached: true,
+					sourceWindow: src.window_id,
+					targetWindow: "mdst:5",
+				});
+				const dstWindows = yield* tmux.listWindows({ targetSession: "mdst" });
+				const moved = yield* Effect.fromOption(
+					Arr.findFirst(dstWindows, (w) => w.window_id === src.window_id),
+				);
+				expect(moved.window_index).toBe(5);
+				const srcWindows = yield* tmux.listWindows({ targetSession: "msrc" });
+				expect(srcWindows.some((w) => w.window_id === src.window_id)).toBe(
+					false,
+				);
+				yield* tmux.killSession({ targetSession: "msrc" });
+				yield* tmux.killSession({ targetSession: "mdst" });
+			}),
+		);
+
+		it.effect("move-window -a moves one index after dst-window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "masrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "madst",
+				});
+				const src = yield* tmux
+					.listWindows({ targetSession: "masrc" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				const dst = yield* tmux
+					.listWindows({ targetSession: "madst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				yield* tmux.moveWindow({
+					after: true,
+					detached: true,
+					sourceWindow: "masrc",
+					targetWindow: `madst:${dst.window_index}`,
+				});
+				const windows = yield* tmux.listWindows({ targetSession: "madst" });
+				const moved = yield* Effect.fromOption(
+					Arr.findFirst(windows, (w) => w.window_id === src.window_id),
+				);
+				expect(moved.window_index).toBe(dst.window_index + 1);
+				yield* tmux.killSession({ targetSession: "madst" });
+			}),
+		);
+
+		it.effect("move-window -b moves one index before dst-window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "mbsrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "mbdst",
+				});
+				const src = yield* tmux
+					.listWindows({ targetSession: "mbsrc" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				const dst = yield* tmux
+					.listWindows({ targetSession: "mbdst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				yield* tmux.moveWindow({
+					before: true,
+					detached: true,
+					sourceWindow: "mbsrc",
+					targetWindow: `mbdst:${dst.window_index}`,
+				});
+				const windows = yield* tmux.listWindows({ targetSession: "mbdst" });
+				const moved = yield* Effect.fromOption(
+					Arr.findFirst(windows, (w) => w.window_id === src.window_id),
+				);
+				expect(moved.window_index).toBe(dst.window_index);
+				yield* tmux.killSession({ targetSession: "mbdst" });
+			}),
+		);
+
+		it.effect("move-window -d leaves the previously active window active", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "mdsrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "mddst",
+				});
+				const dst = yield* tmux
+					.listWindows({ targetSession: "mddst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				expect(dst.window_active).toBe(true);
+				yield* tmux.moveWindow({
+					after: true,
+					detached: true,
+					sourceWindow: "mdsrc",
+					targetWindow: `mddst:${dst.window_index}`,
+				});
+				const active = yield* tmux
+					.listWindows({ targetSession: "mddst" })
+					.pipe(
+						Effect.flatMap((ws) =>
+							Effect.fromOption(Arr.findFirst(ws, (w) => w.window_active)),
+						),
+					);
+				expect(active.window_id).toBe(dst.window_id);
+				yield* tmux.killSession({ targetSession: "mddst" });
+			}),
+		);
+
+		it.effect("move-window -k replaces an occupied index", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "mksrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "mkdst",
+				});
+				const src = yield* tmux
+					.listWindows({ targetSession: "mksrc" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				const dst = yield* tmux
+					.listWindows({ targetSession: "mkdst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				yield* tmux.moveWindow({
+					destroyExisting: true,
+					detached: true,
+					sourceWindow: "mksrc",
+					targetWindow: `mkdst:${dst.window_index}`,
+				});
+				const atIndex = yield* tmux
+					.listWindows({ targetSession: "mkdst" })
+					.pipe(
+						Effect.flatMap((ws) =>
+							Effect.fromOption(
+								Arr.findFirst(ws, (w) => w.window_index === dst.window_index),
+							),
+						),
+					);
+				expect(atIndex.window_id).not.toBe(dst.window_id);
+				expect(atIndex.window_id).toBe(src.window_id);
+				yield* tmux.killSession({ targetSession: "mkdst" });
+			}),
+		);
+
+		it.effect("move-window onto an occupied index without -k errors", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "mesrc",
+				});
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "medst",
+				});
+				const dst = yield* tmux
+					.listWindows({ targetSession: "medst" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				const error = yield* Effect.flip(
+					tmux.moveWindow({
+						detached: true,
+						sourceWindow: "mesrc",
+						targetWindow: `medst:${dst.window_index}`,
+					}),
+				);
+				expect(error).toBeInstanceOf(TmuxCommandError);
+				expect((error as TmuxCommandError).stderr).toContain("index in use");
+				yield* tmux.killSession({ targetSession: "mesrc" });
+				yield* tmux.killSession({ targetSession: "medst" });
+			}),
+		);
+
+		it.effect("move-window -r renumbers windows contiguously", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newSession(undefined, {
+					detached: true,
+					sessionName: "mrsess",
+				});
+				const baseWindow = yield* tmux
+					.listWindows({ targetSession: "mrsess" })
+					.pipe(Effect.flatMap((w) => Effect.fromOption(Arr.head(w))));
+				const base = baseWindow.window_index;
+				// create a window far from base so a gap persists even when
+				// renumber-windows auto-closes gaps on window close
+				yield* tmux.newWindow(undefined, {
+					detached: true,
+					targetWindow: `mrsess:${base + 5}`,
+				});
+				const gapped = yield* tmux.listWindows({ targetSession: "mrsess" });
+				expect(gapped.map((w) => w.window_index)).not.toEqual(
+					gapped.map((_, i) => base + i),
+				);
+				yield* tmux.moveWindow({ renumber: true, sourceWindow: "mrsess" });
+				const after = yield* tmux.listWindows({ targetSession: "mrsess" });
+				expect(after.map((w) => w.window_index)).toEqual(
+					after.map((_, i) => base + i),
+				);
+				yield* tmux.killSession({ targetSession: "mrsess" });
+			}),
+		);
 	});
 });
