@@ -19,8 +19,11 @@ import { TmuxOutput } from "../internal/Output.js";
 export const newSession = TmuxCommand.make("newSession", {
 	cmd: "new-session",
 	flags: Schema.Struct({
-		/** Behave like attach-session if `sessionName` already exists (`-A`). */
-		attachIfExists: TmuxFlag("-A", Schema.Boolean),
+		// TODO: attach-only flag; restore when interactive attach is supported.
+		// -A routes to attach-session on an existing session, which errors
+		// ("not a terminal") in this headless library even with -d.
+		// /** Behave like attach-session if `sessionName` already exists (`-A`). */
+		// attachIfExists: TmuxFlag("-A", Schema.Boolean),
 		/** Always detach; attaching needs a TTY this library does not provide (`-d`). */
 		detached: TmuxFlag("-d", Schema.Literal(true), { required: true }),
 		// TODO: attach-only flag; restore when interactive attach is supported.

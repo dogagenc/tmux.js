@@ -34,14 +34,20 @@ describe("TmuxClient.newSession", () => {
 		}).pipe(Effect.provide(tmuxFrom({ ...empty, stdout: "s2:\n" }))),
 	);
 
-	it.effect("emits boolean and valued flags", () =>
+	it.effect("emits boolean and valued flags in struct order", () =>
 		Effect.gen(function* () {
 			expect(
 				yield* captureArgs((tmux) =>
 					tmux.newSession(undefined, {
 						detached: true,
-						sessionName: "work",
+						noUpdateEnvironment: true,
+						print: true,
+						startDirectory: "/tmp",
+						environment: "FOO=bar",
+						format: "#{session_name}",
 						windowName: "main",
+						sessionName: "work",
+						targetSession: "grp",
 						width: 200,
 						height: "-",
 					}),
@@ -49,10 +55,20 @@ describe("TmuxClient.newSession", () => {
 			).toEqual([
 				"new-session",
 				"-d",
+				"-E",
+				"-P",
+				"-c",
+				"/tmp",
+				"-e",
+				"FOO=bar",
+				"-F",
+				"#{session_name}",
 				"-n",
 				"main",
 				"-s",
 				"work",
+				"-t",
+				"grp",
 				"-x",
 				"200",
 				"-y",
