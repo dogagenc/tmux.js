@@ -32,6 +32,7 @@ export * from "./respawnWindow.js";
 export * from "./rotateWindow.js";
 export * from "./selectLayout.js";
 export * from "./selectPane.js";
+export * from "./selectWindow.js";
 export * from "./sendKeys.js";
 export * from "./setBuffer.js";
 export * from "./showBuffer.js";

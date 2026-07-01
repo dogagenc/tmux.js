@@ -898,5 +898,48 @@ layer(TmuxServer)("window (integration)", (it) => {
 				yield* tmux.killSession({ targetSession: "rwt" });
 			}),
 		);
+
+		it.effect("select-window -t/-l/-n/-p/-T change the active window", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const activeIndex = () =>
+					tmux.listWindows({ targetSession: "it" }).pipe(
+						Effect.flatMap((ws) =>
+							Effect.fromOption(Arr.findFirst(ws, (w) => w.window_active)),
+						),
+						Effect.map((w) => w.window_index),
+					);
+				const baseline = yield* tmux.listWindows({ targetSession: "it" });
+				yield* tmux.newWindow(undefined, { targetWindow: "it" });
+				yield* tmux.newWindow(undefined, { targetWindow: "it" });
+				const windows = yield* tmux.listWindows({ targetSession: "it" });
+				const indexes = windows
+					.map((w) => w.window_index)
+					.sort((a, b) => a - b);
+				const [first, second, third] = indexes;
+
+				yield* tmux.selectWindow({ targetWindow: `it:${first}` });
+				expect(yield* activeIndex()).toBe(first);
+
+				yield* tmux.selectWindow({ next: true, targetWindow: "it" });
+				expect(yield* activeIndex()).toBe(second);
+
+				yield* tmux.selectWindow({ previous: true, targetWindow: "it" });
+				expect(yield* activeIndex()).toBe(first);
+
+				yield* tmux.selectWindow({ targetWindow: `it:${third}` });
+				yield* tmux.selectWindow({ last: true, targetWindow: "it" });
+				expect(yield* activeIndex()).toBe(first);
+
+				yield* tmux.selectWindow({ toggle: true, targetWindow: `it:${first}` });
+				expect(yield* activeIndex()).toBe(third);
+
+				const extras = windows.filter(
+					(w) => !baseline.some((b) => b.window_id === w.window_id),
+				);
+				for (const w of extras)
+					yield* tmux.killWindow({ targetWindow: w.window_id });
+			}),
+		);
 	});
 });
