@@ -22,6 +22,7 @@ export * from "./newSession.js";
 export * from "./newWindow.js";
 export * from "./nextLayout.js";
 export * from "./nextWindow.js";
+export * from "./pasteBuffer.js";
 export * from "./pipePane.js";
 export * from "./previousLayout.js";
 export * from "./previousWindow.js";

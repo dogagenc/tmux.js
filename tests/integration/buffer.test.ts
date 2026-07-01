@@ -109,5 +109,99 @@ layer(TmuxServer)("buffer (integration)", (it) => {
 				);
 			}),
 		);
+
+		// Real timer, not Effect.sleep: it.effect's TestClock never advances
+		// virtual time, and we must wait for tmux to render the pasted input.
+		const settle = () =>
+			Effect.promise(() => new Promise((resolve) => setTimeout(resolve, 300)));
+
+		// Pane running bare `cat` echoes pasted bytes verbatim, so the capture is
+		// shell-config independent.
+		const catPane = Effect.gen(function* () {
+			const tmux = yield* TmuxClient;
+			return yield* tmux.splitWindow("cat", {
+				targetPane: "it",
+				detached: true,
+				print: true,
+				format: "#{pane_id}",
+			});
+		});
+
+		it.effect("pasteBuffer -b/-t inserts the named buffer into the pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const paneId = yield* catPane;
+				yield* tmux.setBuffer("hello", { bufferName: "greet" });
+				yield* tmux.pasteBuffer({ bufferName: "greet", targetPane: paneId });
+				yield* settle();
+				const text = yield* tmux.capturePane({
+					print: true,
+					targetPane: paneId,
+				});
+				expect(text).toContain("hello");
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("pasteBuffer -s replaces LF with the separator", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const paneId = yield* catPane;
+				yield* tmux.setBuffer("red\ngreen", { bufferName: "sep" });
+				yield* tmux.pasteBuffer({
+					bufferName: "sep",
+					separator: "@",
+					targetPane: paneId,
+				});
+				yield* settle();
+				const text = yield* tmux.capturePane({
+					print: true,
+					targetPane: paneId,
+				});
+				expect(text).toContain("red@green");
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect(
+			"pasteBuffer -r keeps the LF verbatim instead of replacing it",
+			() =>
+				Effect.gen(function* () {
+					const tmux = yield* TmuxClient;
+					const paneId = yield* catPane;
+					yield* tmux.setBuffer("red\ngreen", { bufferName: "raw" });
+					yield* tmux.pasteBuffer({
+						bufferName: "raw",
+						raw: true,
+						targetPane: paneId,
+					});
+					yield* settle();
+					const text = yield* tmux.capturePane({
+						print: true,
+						targetPane: paneId,
+					});
+					expect(text).toContain("red\ngreen");
+					expect(text).not.toContain("red@green");
+					yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+				}),
+		);
+
+		it.effect("pasteBuffer -d deletes the buffer after pasting", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const paneId = yield* catPane;
+				yield* tmux.setBuffer("bye", { bufferName: "consumed" });
+				yield* tmux.pasteBuffer({
+					bufferName: "consumed",
+					delete: true,
+					targetPane: paneId,
+				});
+				const error = yield* Effect.flip(
+					tmux.showBuffer({ bufferName: "consumed" }),
+				);
+				expect(error).toBeDefined();
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
 	});
 });
