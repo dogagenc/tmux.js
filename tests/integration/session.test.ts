@@ -40,4 +40,26 @@ layer(TmuxServer)("session (integration)", (it) => {
 			yield* tmux.killSession({ targetSession: "beta" });
 		}),
 	);
+
+	it.effect("hasSession reflects existence before and after kill", () =>
+		Effect.gen(function* () {
+			const tmux = yield* TmuxClient;
+
+			// Keep a session alive so killing "probe" does not exit the server,
+			// which would make hasSession error instead of returning false.
+			yield* tmux.newSession(undefined, {
+				detached: true,
+				sessionName: "keeper",
+			});
+			yield* tmux.newSession(undefined, {
+				detached: true,
+				sessionName: "probe",
+			});
+			expect(yield* tmux.hasSession({ targetSession: "probe" })).toBe(true);
+
+			yield* tmux.killSession({ targetSession: "probe" });
+			expect(yield* tmux.hasSession({ targetSession: "probe" })).toBe(false);
+			expect(yield* tmux.hasSession({ targetSession: "keeper" })).toBe(true);
+		}),
+	);
 });
