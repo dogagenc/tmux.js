@@ -93,5 +93,30 @@ layer(TmuxServer)("pane (integration)", (it) => {
 				expect(after.length).toBe(before.length + 1);
 			}),
 		);
+
+		it.effect("lastPane switches back to the previously active pane", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const original = yield* tmux
+					.listPanes({ all: true })
+					.pipe(
+						Effect.flatMap((p) =>
+							Effect.fromOption(Arr.findFirst(p, (x) => x.pane_active)),
+						),
+					);
+				// splitting makes the new pane active, so the original is now "last"
+				yield* tmux.splitWindow(undefined, { targetPane: "it" });
+				yield* tmux.lastPane({ targetWindow: "it" });
+				const active = yield* tmux
+					.listPanes({ all: true })
+					.pipe(
+						Effect.flatMap((p) =>
+							Effect.fromOption(Arr.findFirst(p, (x) => x.pane_active)),
+						),
+					);
+				expect(active.pane_id).toBe(original.pane_id);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
 	});
 });
