@@ -812,6 +812,81 @@ layer(TmuxServer)("pane (integration)", (it) => {
 			}),
 		);
 
+		it.effect("rotate-window -D shifts pane order to [%2,%0,%1]", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const before = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(before.length).toBe(3);
+				yield* tmux.rotateWindow({ down: true, targetWindow: "it" });
+				const after = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(after.map((p) => p.pane_id)).toEqual([
+					Arr.getUnsafe(before, 2).pane_id,
+					Arr.getUnsafe(before, 0).pane_id,
+					Arr.getUnsafe(before, 1).pane_id,
+				]);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("rotate-window -U shifts pane order inverse of -D", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				yield* tmux.splitWindow(undefined, {
+					targetPane: "it",
+					detached: true,
+				});
+				const before = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(before.length).toBe(3);
+				yield* tmux.rotateWindow({ down: true, targetWindow: "it" });
+				yield* tmux.rotateWindow({ up: true, targetWindow: "it" });
+				const after = yield* tmux.listPanes({ targetWindow: "it" });
+				expect(after.map((p) => p.pane_id)).toEqual(
+					before.map((p) => p.pane_id),
+				);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect(
+			"rotate-window -Z keeps the window zoomed, plain -D drops it",
+			() =>
+				Effect.gen(function* () {
+					const tmux = yield* TmuxClient;
+					yield* tmux.splitWindow(undefined, {
+						targetPane: "it",
+						detached: true,
+					});
+					const zoomed = () =>
+						tmux.displayMessage("#{window_zoomed_flag}", {
+							print: true,
+							targetPane: "it",
+						});
+					yield* tmux.resizePane(undefined, { zoom: true, targetPane: "it" });
+					expect(yield* zoomed()).toBe("1");
+					yield* tmux.rotateWindow({
+						down: true,
+						keepZoomed: true,
+						targetWindow: "it",
+					});
+					expect(yield* zoomed()).toBe("1");
+					yield* tmux.rotateWindow({ down: true, targetWindow: "it" });
+					expect(yield* zoomed()).toBe("0");
+					yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+				}),
+		);
+
 		it.effect("clears pane history (-t): history_size drops to zero", () =>
 			Effect.gen(function* () {
 				const tmux = yield* TmuxClient;
