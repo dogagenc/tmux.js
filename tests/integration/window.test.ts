@@ -176,6 +176,48 @@ layer(TmuxServer)("window (integration)", (it) => {
 			}),
 		);
 
+		it.effect("previousWindow moves the active window back one index", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const activeIndex = () =>
+					tmux
+						.displayMessage("#{window_index}", {
+							print: true,
+							targetPane: "it",
+						})
+						.pipe(Effect.map(Number));
+				const baseline = yield* tmux.listWindows({ targetSession: "it" });
+				yield* tmux.newWindow(undefined, { targetWindow: "it" });
+				const before = yield* activeIndex();
+				yield* tmux.previousWindow({ targetSession: "it" });
+				expect(yield* activeIndex()).toBe(before - 1);
+				const extras = yield* tmux
+					.listWindows({ targetSession: "it" })
+					.pipe(
+						Effect.map((ws) =>
+							ws.filter(
+								(w) => !baseline.some((b) => b.window_id === w.window_id),
+							),
+						),
+					);
+				for (const w of extras)
+					yield* tmux.killWindow({ targetWindow: w.window_id });
+			}),
+		);
+
+		it.effect("previousWindow -a errors when no window has an alert", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const error = yield* Effect.flip(
+					tmux.previousWindow({ alert: true, targetSession: "it" }),
+				);
+				expect(error).toBeInstanceOf(TmuxCommandError);
+				expect((error as TmuxCommandError).stderr).toContain(
+					"no previous window",
+				);
+			}),
+		);
+
 		it.effect("next-layout changes the window layout", () =>
 			Effect.gen(function* () {
 				const tmux = yield* TmuxClient;

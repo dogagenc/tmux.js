@@ -22,6 +22,7 @@ export * from "./nextLayout.js";
 export * from "./nextWindow.js";
 export * from "./pipePane.js";
 export * from "./previousLayout.js";
+export * from "./previousWindow.js";
 export * from "./renameSession.js";
 export * from "./renameWindow.js";
 export * from "./resizePane.js";
