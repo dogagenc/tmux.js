@@ -313,7 +313,7 @@ layer(TmuxServer)("window (integration)", (it) => {
 			}),
 		);
 
-		it.effect("select-layout -E settles the window layout to a string", () =>
+		it.effect("select-layout -E evens an uneven layout", () =>
 			Effect.gen(function* () {
 				const tmux = yield* TmuxClient;
 				const pane = yield* tmux.splitWindow(undefined, {
@@ -322,15 +322,18 @@ layer(TmuxServer)("window (integration)", (it) => {
 					print: true,
 					format: "#{pane_id}",
 				});
+				yield* tmux.resizePane(undefined, { height: 5, targetPane: pane });
+				const layout = () =>
+					tmux.displayMessage("#{window_layout}", {
+						targetPane: "it",
+						print: true,
+					});
+				const uneven = yield* layout();
 				yield* tmux.selectLayout(undefined, {
 					spreadEvenly: true,
 					targetPane: "it",
 				});
-				const layout = yield* tmux.displayMessage("#{window_layout}", {
-					targetPane: "it",
-					print: true,
-				});
-				expect(layout.length).toBeGreaterThan(0);
+				expect(yield* layout()).not.toBe(uneven);
 				yield* tmux.killPane({ targetPane: pane });
 			}),
 		);
