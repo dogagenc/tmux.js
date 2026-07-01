@@ -48,6 +48,8 @@ export const TmuxVariables = {
 	pane_index: Schema.FiniteFromString,
 	pane_width: Schema.FiniteFromString,
 	pane_height: Schema.FiniteFromString,
+	pane_left: Schema.FiniteFromString,
+	pane_top: Schema.FiniteFromString,
 	history_size: Schema.FiniteFromString,
 	history_limit: Schema.FiniteFromString,
 	history_bytes: Schema.FiniteFromString,

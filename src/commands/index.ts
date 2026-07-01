@@ -11,6 +11,7 @@ export * from "./lastPane.js";
 export * from "./listPanes.js";
 export * from "./listSessions.js";
 export * from "./listWindows.js";
+export * from "./movePane.js";
 export * from "./newSession.js";
 export * from "./newWindow.js";
 export * from "./renameSession.js";

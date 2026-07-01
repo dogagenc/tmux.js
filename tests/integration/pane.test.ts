@@ -310,5 +310,92 @@ layer(TmuxServer)("pane (integration)", (it) => {
 						yield* tmux.killWindow({ targetWindow: w.window_id });
 			}),
 		);
+
+		it.effect("moves a pane from another window (-s/-t, -d keeps active)", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				const dst = yield* tmux
+					.listPanes({ targetWindow: "it" })
+					.pipe(Effect.flatMap((p) => Effect.fromOption(Arr.head(p))));
+				const before = yield* tmux.listPanes({ targetWindow: dst.pane_id });
+				yield* tmux.newWindow(undefined, {
+					windowName: "mvsrc",
+					detached: true,
+				});
+				yield* tmux.movePane({
+					sourcePane: "it:mvsrc",
+					targetPane: dst.pane_id,
+					detached: true,
+				});
+				const after = yield* tmux.listPanes({ targetWindow: dst.pane_id });
+				expect(after.length).toBe(before.length + 1);
+				// -d left the source pane active untouched: the destination window's
+				// original pane is still the active one.
+				const active = yield* tmux
+					.listPanes({ targetWindow: dst.pane_id })
+					.pipe(
+						Effect.flatMap((p) =>
+							Effect.fromOption(Arr.findFirst(p, (x) => x.pane_active)),
+						),
+					);
+				expect(active.pane_id).toBe(dst.pane_id);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect("moves a pane horizontally, side by side (-h, pane_left)", () =>
+			Effect.gen(function* () {
+				const tmux = yield* TmuxClient;
+				yield* tmux.newWindow(undefined, {
+					windowName: "mvh",
+					detached: true,
+				});
+				yield* tmux.movePane({
+					sourcePane: "it:mvh",
+					targetPane: "it",
+					horizontal: true,
+					detached: true,
+				});
+				const panes = yield* tmux.listPanes({
+					targetWindow: "it",
+					includeVariables: ["pane_left"],
+				});
+				// -h yields side-by-side panes: one sits to the right (pane_left > 0).
+				expect(panes.some((p) => p.pane_left > 0)).toBe(true);
+				yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+			}),
+		);
+
+		it.effect(
+			"moves a pane before the target (-b, default vertical pane_top)",
+			() =>
+				Effect.gen(function* () {
+					const tmux = yield* TmuxClient;
+					yield* tmux.newWindow(undefined, {
+						windowName: "mvb",
+						detached: true,
+					});
+					const src = yield* tmux
+						.listPanes({ targetWindow: "it:mvb" })
+						.pipe(Effect.flatMap((p) => Effect.fromOption(Arr.head(p))));
+					yield* tmux.movePane({
+						sourcePane: src.pane_id,
+						targetPane: "it",
+						before: true,
+						detached: true,
+					});
+					const panes = yield* tmux.listPanes({
+						targetWindow: "it",
+						includeVariables: ["pane_left", "pane_top"],
+					});
+					const moved = yield* Effect.fromOption(
+						Arr.findFirst(panes, (p) => p.pane_id === src.pane_id),
+					);
+					// -b + default vertical places the moved pane above the target.
+					expect(moved.pane_top).toBe(0);
+					expect(panes.some((p) => p.pane_top > 0)).toBe(true);
+					yield* tmux.killPane({ killOthers: true, targetPane: "it" });
+				}),
+		);
 	});
 });

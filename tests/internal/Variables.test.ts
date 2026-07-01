@@ -26,6 +26,8 @@ const PaneStruct = variableStruct([
 	"pane_index",
 	"pane_width",
 	"pane_height",
+	"pane_left",
+	"pane_top",
 	"history_size",
 	"history_limit",
 	"history_bytes",
@@ -131,6 +133,8 @@ describe("pane variable codec", () => {
 		pane_index: 1,
 		pane_width: 174,
 		pane_height: 30,
+		pane_left: 0,
+		pane_top: 5,
 		history_size: 3,
 		history_limit: 2000,
 		history_bytes: 149619,
@@ -141,7 +145,19 @@ describe("pane variable codec", () => {
 
 	it.effect("decodes finite numbers, pane_id string, and bit booleans", () =>
 		Effect.gen(function* () {
-			const line = ["1", "174", "30", "3", "2000", "149619", "%3", "1", "0"];
+			const line = [
+				"1",
+				"174",
+				"30",
+				"0",
+				"5",
+				"3",
+				"2000",
+				"149619",
+				"%3",
+				"1",
+				"0",
+			];
 			expect(yield* decodeLine(PaneStruct)(line.join(US))).toEqual(object);
 		}),
 	);
