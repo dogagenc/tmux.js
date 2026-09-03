@@ -89,7 +89,7 @@ This project uses [Effect](https://effect.website) v4 as a language. The pieces 
 - `@effect/vitest` — `it.effect` test runner.
 - `@effect/language-service` — Effect-specific diagnostics (wired in `tsconfig.json`).
 
-Service pattern used here (see `src/internal/Client.ts`): a `Context.Service` with a dependency-requiring `layer(config?)` (requires `ChildProcessSpawner`, so tests and non-Node platforms can provide their own services). Errors stay in the typed channel as a `Schema.TaggedErrorClass`; nothing runs at import time.
+Service pattern used here (see `src/internal/Client.ts`): a `Context.Service` with a dependency-requiring `layer(config?)` (requires `ChildProcessSpawner`, so tests and non-Node platforms can provide their own services). Errors stay in the typed channel as a `Schema.TaggedError`; nothing runs at import time.
 
 Validation commands:
 

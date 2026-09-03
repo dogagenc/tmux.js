@@ -3,7 +3,7 @@ import type { Prettify } from "./utils/Types.js";
 
 const DateFromSecondsString = Schema.FiniteFromString.pipe(
 	Schema.decodeTo(
-		Schema.DateValid,
+		Schema.Date,
 		SchemaTransformation.transform({
 			decode: (seconds) => new Date(seconds * 1000),
 			encode: (date) => Math.floor(date.getTime() / 1000),

@@ -1,6 +1,6 @@
 {
 	"name": "@dogagenc/tmux.js",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -64,7 +64,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.0",
 		"@effect/language-service": "^0.86.2",
-		"@effect/vitest": "4.0.0-beta.92",
+		"@effect/vitest": "4.0.0-rc.112",
 		"@types/node": "^25.9.3",
 		"tsx": "^4.22.4",
 		"typedoc": "^0.28.20",
@@ -72,8 +72,8 @@
 		"vitest": "^4.1.9"
 	},
 	"dependencies": {
-		"@effect/platform-bun": "4.0.0-beta.92",
-		"@effect/platform-node": "4.0.0-beta.92",
-		"effect": "4.0.0-beta.92"
+		"@effect/platform-bun": "4.0.0-rc.112",
+		"@effect/platform-node": "4.0.0-rc.112",
+		"effect": "4.0.0-rc.112"
 	}
 }

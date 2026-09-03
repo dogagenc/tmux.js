@@ -4,7 +4,7 @@ import { Schema } from "effect";
  * tmux binary could not be spawned because it is missing from PATH
  * (spawn-level `PlatformError` with `reason._tag === "NotFound"`).
  */
-export class TmuxExecutableNotFound extends Schema.TaggedErrorClass<TmuxExecutableNotFound>()(
+export class TmuxExecutableNotFound extends Schema.TaggedError<TmuxExecutableNotFound>()(
 	"TmuxExecutableNotFound",
 	{
 		executable: Schema.String,
@@ -18,7 +18,7 @@ export class TmuxExecutableNotFound extends Schema.TaggedErrorClass<TmuxExecutab
  * await failure, permission denied, signal interruption. tmux did not run to a
  * nonzero exit — something below that broke.
  */
-export class TmuxProcessError extends Schema.TaggedErrorClass<TmuxProcessError>()(
+export class TmuxProcessError extends Schema.TaggedError<TmuxProcessError>()(
 	"TmuxProcessError",
 	{
 		cause: Schema.Defect(),
@@ -26,7 +26,7 @@ export class TmuxProcessError extends Schema.TaggedErrorClass<TmuxProcessError>(
 ) {}
 
 /** No tmux server is running (covers both no-server stderr forms). */
-export class TmuxServerNotRunning extends Schema.TaggedErrorClass<TmuxServerNotRunning>()(
+export class TmuxServerNotRunning extends Schema.TaggedError<TmuxServerNotRunning>()(
 	"TmuxServerNotRunning",
 	{
 		stderr: Schema.String,
@@ -34,7 +34,7 @@ export class TmuxServerNotRunning extends Schema.TaggedErrorClass<TmuxServerNotR
 ) {}
 
 /** tmux could not find the requested session/window/pane/client. */
-export class TmuxTargetNotFound extends Schema.TaggedErrorClass<TmuxTargetNotFound>()(
+export class TmuxTargetNotFound extends Schema.TaggedError<TmuxTargetNotFound>()(
 	"TmuxTargetNotFound",
 	{
 		stderr: Schema.String,
@@ -42,7 +42,7 @@ export class TmuxTargetNotFound extends Schema.TaggedErrorClass<TmuxTargetNotFou
 ) {}
 
 /** tmux ran and exited nonzero for an unclassified reason. */
-export class TmuxCommandError extends Schema.TaggedErrorClass<TmuxCommandError>()(
+export class TmuxCommandError extends Schema.TaggedError<TmuxCommandError>()(
 	"TmuxCommandError",
 	{
 		stderr: Schema.String,
@@ -56,7 +56,7 @@ export class TmuxCommandError extends Schema.TaggedErrorClass<TmuxCommandError>(
  * - field-count mismatch:  `{ line, message, expected, got }`
  * - schema decode failure: `{ line, message, cause }`
  */
-export class TmuxParseError extends Schema.TaggedErrorClass<TmuxParseError>()(
+export class TmuxParseError extends Schema.TaggedError<TmuxParseError>()(
 	"TmuxParseError",
 	{
 		line: Schema.String,
@@ -72,7 +72,7 @@ export class TmuxParseError extends Schema.TaggedErrorClass<TmuxParseError>()(
  * value. Raised before tmux is spawned, so a typo never reaches the shell.
  * Distinct from `TmuxParseError`, which is about decoding tmux's *output*.
  */
-export class TmuxCommandOptionsError extends Schema.TaggedErrorClass<TmuxCommandOptionsError>()(
+export class TmuxCommandOptionsError extends Schema.TaggedError<TmuxCommandOptionsError>()(
 	"TmuxCommandOptionsError",
 	{
 		command: Schema.String,
@@ -87,7 +87,7 @@ export class TmuxCommandOptionsError extends Schema.TaggedErrorClass<TmuxCommand
  * built, before any command runs. The client analogue of
  * `TmuxCommandOptionsError` (which is per-command and carries a `command`).
  */
-export class TmuxClientConfigError extends Schema.TaggedErrorClass<TmuxClientConfigError>()(
+export class TmuxClientConfigError extends Schema.TaggedError<TmuxClientConfigError>()(
 	"TmuxClientConfigError",
 	{
 		message: Schema.String,
