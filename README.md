@@ -101,16 +101,20 @@ pnpm check       # Biome lint + format
 
 ## Command coverage
 
-Implemented commands:
+46 tmux commands are wrapped, each with typed options and results — see the
+[API docs](https://dogagenc.github.io/tsmux/) for per-command details:
 
-- `capturePane` — `tmux capture-pane` (safe flags; stdout with `print`).
-- `displayMessage` — `tmux display-message` (all safe flags except stdin-forwarding `-I`).
-- `listSessions` — `tmux list-sessions` (optional `filter`).
-- `listWindows` — `tmux list-windows` (optional `all`, `filter`, `targetSession`).
-- `renameSession` — `tmux rename-session` (required `newName`, optional `targetSession`).
-- `showBuffer` — `tmux show-buffer` (optional `bufferName`).
+`breakPane` `capturePane` `clearHistory` `deleteBuffer` `displayMessage`
+`hasSession` `joinPane` `killPane` `killServer` `killSession` `killWindow`
+`lastPane` `lastWindow` `linkWindow` `listPanes` `listSessions` `listWindows`
+`loadBuffer` `movePane` `moveWindow` `newSession` `newWindow` `nextLayout`
+`nextWindow` `pasteBuffer` `pipePane` `previousLayout` `previousWindow`
+`renameSession` `renameWindow` `resizePane` `resizeWindow` `respawnPane`
+`respawnWindow` `rotateWindow` `saveBuffer` `selectLayout` `selectPane`
+`selectWindow` `sendKeys` `setBuffer` `showBuffer` `splitWindow` `swapPane`
+`swapWindow` `unlinkWindow`
 
-More are added incrementally. 
+More are added incrementally.
 
 ## License
 
