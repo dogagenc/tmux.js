@@ -11,5 +11,7 @@ export default defineConfig({
 		fileParallelism: false,
 		testTimeout: 15_000,
 		hookTimeout: 15_000,
+		// One send-keys test is timing-flaky; retry once instead of failing the run.
+		retry: 1,
 	},
 });

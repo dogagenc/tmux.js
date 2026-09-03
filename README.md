@@ -18,6 +18,8 @@ This package is an early-stage wrapper around the `tmux` CLI. Commands will be a
 npm install tsmux
 ```
 
+Requires a `tmux` binary of version 3.4 or newer on `PATH`. Tested against tmux 3.4 through 3.6.
+
 ## Entry points
 
 The package ships ESM-only with three entry points:

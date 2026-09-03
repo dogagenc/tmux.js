@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm check
+
+      - run: pnpm typecheck
+
+      - run: pnpm test
+
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.4 is the supported floor; 3.6b is the newest version the suite is green on.
+        tmux-version: ["3.4", "3.6b"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: tmux-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/tmux-install
+          key: tmux-${{ runner.os }}-${{ matrix.tmux-version }}
+
+      - name: Install build dependencies
+        if: steps.tmux-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libevent-dev libncurses-dev bison
+
+      - name: Build tmux ${{ matrix.tmux-version }}
+        if: steps.tmux-cache.outputs.cache-hit != 'true'
+        run: |
+          set -eux
+          version="${{ matrix.tmux-version }}"
+          curl -fsSL -o tmux.tar.gz \
+            "https://github.com/tmux/tmux/releases/download/${version}/tmux-${version}.tar.gz"
+          tar xzf tmux.tar.gz
+          cd "tmux-${version}"
+          ./configure --prefix="$HOME/tmux-install"
+          make
+          make install
+
+      - run: echo "$HOME/tmux-install/bin" >> "$GITHUB_PATH"
+
+      - run: tmux -V
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm test:integration
