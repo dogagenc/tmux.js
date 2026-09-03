@@ -146,3 +146,60 @@ describe("TmuxParseError sub-shapes are distinguishable", () => {
 		}),
 	);
 });
+
+// tmux 3.4 / 3.5 run `-F` output through vis(3): our raw separators arrive as
+// the literal text `\037` / `\036`. Reverted in 3.6, absent before 3.4.
+describe("splitRecords under tmux 3.4/3.5 vis escaping", () => {
+	const rec = (...fields: ReadonlyArray<string>) => fields.join(US);
+	const visWire = (...records: ReadonlyArray<Array<string>>) =>
+		records.map((r) => `${r.join("\\037")}\\036\n`).join("");
+
+	it("decodes escaped separators into fields", () => {
+		expect(splitRecords(visWire(["$0", "main"], ["$1", "other"]))).toEqual([
+			rec("$0", "main"),
+			rec("$1", "other"),
+		]);
+	});
+
+	// tmux 3.4/3.5 do not double content backslashes, so `\\` stays `\\`.
+	it("leaves a doubled backslash in a field value untouched", () => {
+		const records = splitRecords(visWire(["$0", "C:\\\\path"]));
+		expect(records).toHaveLength(1);
+		expect(records[0]?.split(US)).toEqual(["$0", "C:\\\\path"]);
+	});
+
+	// vis leaves tab and newline raw; only octal escapes appear.
+	it("preserves raw tabs and newlines inside an escaped record", () => {
+		const tricky = "a\tname\nhere";
+		const records = splitRecords(visWire(["$0", tricky]));
+		expect(records).toHaveLength(1);
+		expect(records[0]?.split(US)).toEqual(["$0", tricky]);
+	});
+
+	it("returns [] for empty stdout", () => {
+		expect(splitRecords("")).toEqual([]);
+	});
+
+	// Raw-byte era (3.6+): literal `\037` text in a field must survive verbatim.
+	it("does not mangle literal backslash-octal text when raw bytes are present", () => {
+		const literal = "title\\037and\\036more";
+		const records = splitRecords(`${rec("$0", literal)}${RS}\n`);
+		expect(records).toHaveLength(1);
+		expect(records[0]?.split(US)).toEqual(["$0", literal]);
+	});
+
+	it("leaves stdout without any separator untouched", () => {
+		expect(splitRecords("no separators here\n")).toEqual([
+			"no separators here\n",
+		]);
+	});
+
+	// Same documented in-band-delimiter limitation as a raw US/RS inside a value
+	// on 3.6+: literal `\036` text in a field splits the record wrongly.
+	it("splits a field value containing literal escaped-separator text", () => {
+		expect(splitRecords(visWire(["$0", "a\\036\nrest"]))).toEqual([
+			rec("$0", "a"),
+			"rest",
+		]);
+	});
+});

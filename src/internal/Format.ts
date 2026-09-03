@@ -20,9 +20,11 @@ import { TmuxParseError } from "../Errors.js";
  * limitation, not a guarantee; there is no fully safe in-band delimiter.
  *
  * The raw bytes are embedded in the format string and pass through tmux
- * literally (verified on tmux 3.6b). Backslash-octal escapes (`\037`) are NOT
- * unescaped for a directly-spawned argv — only inside tmux's own command parser
- * — so the literal bytes must be used here, not the escape sequences.
+ * literally (verified on tmux 3.6b), except on tmux 3.4 and 3.5, which run
+ * `-F` output through vis(3) and emit the literal text `\037` / `\036`
+ * instead; `splitRecords` undoes that. Backslash-octal escapes (`\037`) are
+ * NOT unescaped for a directly-spawned argv — only inside tmux's own command
+ * parser — so the literal bytes must be used here, not the escape sequences.
  */
 const UNIT_SEPARATOR = "\x1f";
 const RECORD_SEPARATOR = "\x1e";
@@ -44,6 +46,16 @@ export const formatString = <Fields extends Schema.Struct.Fields>(
 	);
 
 /**
+ * Undo the vis(3) escaping tmux 3.4 and 3.5 apply to `-F` output. Only our own
+ * separators are decoded: that window does not double content backslashes, so a
+ * general unvis could not tell an escape from literal `\037` in a value.
+ */
+const unvisSeparators = (stdout: string): string =>
+	stdout
+		.replaceAll("\\037", UNIT_SEPARATOR)
+		.replaceAll("\\036", RECORD_SEPARATOR);
+
+/**
  * Split raw tmux stdout into records on the RS terminator. tmux appends its own
  * `\n` after each item, so records are separated by `RS \n`; splitting on RS
  * alone leaves that newline leading each record after the first (stripped here)
@@ -51,7 +63,7 @@ export const formatString = <Fields extends Schema.Struct.Fields>(
  */
 export const splitRecords = (stdout: string): ReadonlyArray<string> =>
 	pipe(
-		stdout,
+		Str.includes(RECORD_SEPARATOR)(stdout) ? stdout : unvisSeparators(stdout),
 		Str.split(RECORD_SEPARATOR),
 		Arr.map((record, index) =>
 			index > 0 && record.startsWith("\n") ? record.slice(1) : record,
