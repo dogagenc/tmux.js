@@ -1,6 +1,6 @@
 {
 	"name": "@dogagenc/tmux.js",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -29,7 +29,7 @@
 	"scripts": {
 		"run:index": "tsx examples/index.ts",
 		"run:effect": "tsx examples/effect.ts",
-		"build": "tsc -p tsconfig.build.json",
+		"build": "rm -rf dist && tsc -p tsconfig.build.json",
 		"docs": "typedoc",
 		"lint": "biome lint .",
 		"format": "biome format --write .",
