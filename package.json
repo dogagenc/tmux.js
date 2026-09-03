@@ -1,6 +1,9 @@
 {
 	"name": "@dogagenc/tmux.js",
 	"version": "0.1.0",
+	"publishConfig": {
+		"access": "public"
+	},
 	"description": "TypeScript-first programmatic tmux for Node.js and Bun",
 	"type": "module",
 	"main": "./dist/exports/node.js",
