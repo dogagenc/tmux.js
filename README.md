@@ -18,7 +18,9 @@ This package is an early-stage wrapper around the `tmux` CLI. Commands will be a
 npm install @dogagenc/tmux.js
 ```
 
-Requires a `tmux` binary of version 3.4 or newer on `PATH`. Tested against tmux 3.4 through 3.6.
+Requires a `tmux` binary of version 3.4 or newer — found on `PATH` by default, or
+point at any binary with `new TmuxClient({ executable: "/path/to/tmux" })`. Tested
+against tmux 3.4 through 3.6.
 
 ## Entry points
 
