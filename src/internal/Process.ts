@@ -65,7 +65,7 @@ export class TmuxProcess extends Context.Service<
 			Exclude<TmuxProcessRunError, TmuxTargetNotFound>
 		>;
 	}
->()("tsmux/TmuxProcess") {
+>()("tmux.js/TmuxProcess") {
 	static readonly layer = (options: TmuxClientConfig = {}) =>
 		Layer.effect(
 			TmuxProcess,

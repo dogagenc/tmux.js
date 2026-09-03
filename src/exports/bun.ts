@@ -15,11 +15,11 @@ export type { TmuxClientConfig } from "../internal/Config.js";
  * config surfaces as a `TmuxClientConfigError` rejection on the first command.
  *
  * For the Effect-native API (no Promise boundary, typed error channel), use
- * `TmuxClient.layer` from `tsmux/effect` instead.
+ * `TmuxClient.layer` from `@dogagenc/tmux.js/effect` instead.
  *
  * @example
  * ```ts
- * import { TmuxClient } from "tsmux/bun";
+ * import { TmuxClient } from "@dogagenc/tmux.js/bun";
  *
  * const tmux = new TmuxClient();
  * const sessions = await tmux.listSessions();

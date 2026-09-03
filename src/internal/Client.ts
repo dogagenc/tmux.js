@@ -52,12 +52,12 @@ const provideProcessToCommands = <T extends Record<string, ProcessCommand>>(
  * dependency is closed over by the layer.
  *
  * Provide it with {@link TmuxClient.layer}. For a Promise-based API, use
- * `new TmuxClient(config)` from `tsmux/node` or `tsmux/bun`.
+ * `new TmuxClient(config)` from `@dogagenc/tmux.js` or `@dogagenc/tmux.js/bun`.
  */
 export class TmuxClient extends Context.Service<
 	TmuxClient,
 	Prettify<ProvidedCommands<typeof commands>>
->()("tsmux/TmuxClient") {
+>()("tmux.js/TmuxClient") {
 	/**
 	 * Build the `TmuxClient` layer, the Effect-native entry point. Provide it to a
 	 * program, then `yield* TmuxClient` to get an object of command methods — each
@@ -69,8 +69,8 @@ export class TmuxClient extends Context.Service<
 	 * with `TmuxClientConfigError`. A platform layer (e.g. `NodeServices.layer`)
 	 * must still be provided for the underlying `ChildProcessSpawner`.
 	 *
-	 * For a Promise-based API, use `new TmuxClient(config)` from `tsmux/node`
-	 * or `tsmux/bun` instead.
+	 * For a Promise-based API, use `new TmuxClient(config)` from `@dogagenc/tmux.js`
+	 * or `@dogagenc/tmux.js/bun` instead.
 	 *
 	 * @example
 	 * ```ts
@@ -78,7 +78,7 @@ export class TmuxClient extends Context.Service<
 	 * import { NodeServices } from "@effect/platform-node";
 	 * // or
 	 * // import { BunServices } from "@effect/platform-bun";
-	 * import { TmuxClient } from "tsmux/effect";
+	 * import { TmuxClient } from "@dogagenc/tmux.js/effect";
 	 *
 	 * const program = Effect.gen(function* () {
 	 *   const tmux = yield* TmuxClient;

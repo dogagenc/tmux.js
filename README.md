@@ -1,4 +1,4 @@
-# tsmux
+# tmux.js
 
 TypeScript-first programmatic tmux for Node.js and Bun.
 
@@ -15,7 +15,7 @@ This package is an early-stage wrapper around the `tmux` CLI. Commands will be a
 ## Installation
 
 ```sh
-npm install tsmux
+npm install @dogagenc/tmux.js
 ```
 
 Requires a `tmux` binary of version 3.4 or newer on `PATH`. Tested against tmux 3.4 through 3.6.
@@ -24,9 +24,9 @@ Requires a `tmux` binary of version 3.4 or newer on `PATH`. Tested against tmux 
 
 The package ships ESM-only with three entry points:
 
-- `tsmux` — standalone Promise-based API for Node-compatible runtimes. No Effect knowledge required.
-- `tsmux/bun` — standalone Promise-based API backed by Bun platform services.
-- `tsmux/effect` — Effect-native API (`TmuxClient` service + base layer + tagged errors) for Effect users.
+- `@dogagenc/tmux.js` — standalone Promise-based API for Node-compatible runtimes. No Effect knowledge required.
+- `@dogagenc/tmux.js/bun` — standalone Promise-based API backed by Bun platform services.
+- `@dogagenc/tmux.js/effect` — Effect-native API (`TmuxClient` service + base layer + tagged errors) for Effect users.
 
 All entry points expose the same tagged error classes (`TmuxExecutableNotFound`, `TmuxProcessError`, `TmuxServerNotRunning`, `TmuxTargetNotFound`, `TmuxCommandError`, `TmuxParseError`, `TmuxCommandOptionsError`, `TmuxClientConfigError`). Importing any entry point spawns nothing; tmux only runs when a command is called.
 
@@ -35,7 +35,7 @@ All entry points expose the same tagged error classes (`TmuxExecutableNotFound`,
 ### Standalone (Promise API)
 
 ```ts
-import { TmuxClient, TmuxServerNotRunning } from "tsmux";
+import { TmuxClient, TmuxServerNotRunning } from "@dogagenc/tmux.js";
 
 const tmux = new TmuxClient();
 
@@ -58,7 +58,7 @@ try {
 ```ts
 import { NodeServices } from "@effect/platform-node";
 import { Effect, Layer } from "effect";
-import { TmuxClient } from "tsmux/effect";
+import { TmuxClient } from "@dogagenc/tmux.js/effect";
 
 const program = Effect.gen(function* () {
 	const tmux = yield* TmuxClient;
@@ -104,7 +104,7 @@ pnpm check       # Biome lint + format
 ## Command coverage
 
 46 tmux commands are wrapped, each with typed options and results — see the
-[API docs](https://dogagenc.github.io/tsmux/) for per-command details:
+[API docs](https://dogagenc.github.io/tmux.js/) for per-command details:
 
 `breakPane` `capturePane` `clearHistory` `deleteBuffer` `displayMessage`
 `hasSession` `joinPane` `killPane` `killServer` `killSession` `killWindow`
