@@ -1,4 +1,4 @@
-# tmux.js
+# tsmux
 
 TypeScript-first programmatic tmux for Node.js and Bun.
 
@@ -15,18 +15,16 @@ This package is an early-stage wrapper around the `tmux` CLI. Commands will be a
 ## Installation
 
 ```sh
-pnpm add tmux.js
+npm install tsmux
 ```
-
-> Not published yet. Use a workspace or local package link while developing.
 
 ## Entry points
 
 The package ships ESM-only with three entry points:
 
-- `tmux.js` — standalone Promise-based API for Node-compatible runtimes. No Effect knowledge required.
-- `tmux.js/bun` — standalone Promise-based API backed by Bun platform services.
-- `tmux.js/effect` — Effect-native API (`TmuxClient` service + base layer + tagged errors) for Effect users.
+- `tsmux` — standalone Promise-based API for Node-compatible runtimes. No Effect knowledge required.
+- `tsmux/bun` — standalone Promise-based API backed by Bun platform services.
+- `tsmux/effect` — Effect-native API (`TmuxClient` service + base layer + tagged errors) for Effect users.
 
 All entry points expose the same tagged error classes (`TmuxExecutableNotFound`, `TmuxProcessError`, `TmuxServerNotRunning`, `TmuxTargetNotFound`, `TmuxCommandError`, `TmuxParseError`, `TmuxCommandOptionsError`, `TmuxClientConfigError`). Importing any entry point spawns nothing; tmux only runs when a command is called.
 
@@ -35,7 +33,7 @@ All entry points expose the same tagged error classes (`TmuxExecutableNotFound`,
 ### Standalone (Promise API)
 
 ```ts
-import { TmuxClient, TmuxServerNotRunning } from "tmux.js";
+import { TmuxClient, TmuxServerNotRunning } from "tsmux";
 
 const tmux = new TmuxClient();
 
@@ -58,7 +56,7 @@ try {
 ```ts
 import { NodeServices } from "@effect/platform-node";
 import { Effect, Layer } from "effect";
-import { TmuxClient } from "tmux.js/effect";
+import { TmuxClient } from "tsmux/effect";
 
 const program = Effect.gen(function* () {
 	const tmux = yield* TmuxClient;

@@ -1,7 +1,6 @@
 {
-	"name": "tmux.js",
+	"name": "tsmux",
 	"version": "0.1.0",
-	"private": true,
 	"description": "TypeScript-first programmatic tmux for Node.js and Bun",
 	"type": "module",
 	"main": "./dist/exports/node.js",
@@ -35,7 +34,8 @@
 		"test:integration": "vitest run --config vitest.integration.config.ts",
 		"typecheck": "tsc -p tsconfig.typecheck.json",
 		"diagnostics": "effect-language-service diagnostics --project \"$PWD/tsconfig.json\" --format text",
-		"check:flags": "node scripts/check-flag-coverage.mjs"
+		"check:flags": "node scripts/check-flag-coverage.mjs",
+		"prepublishOnly": "pnpm build && pnpm test"
 	},
 	"keywords": [
 		"tmux",
@@ -47,6 +47,12 @@
 	],
 	"author": "Doga Genc",
 	"license": "ISC",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/dogagenc/tsmux.git"
+	},
+	"bugs": "https://github.com/dogagenc/tsmux/issues",
+	"homepage": "https://github.com/dogagenc/tsmux#readme",
 	"engines": {
 		"node": ">=18.0.0"
 	},
