@@ -1,6 +1,6 @@
 {
-	"name": "@dogagenc/tmux.js",
-	"version": "0.1.2",
+	"name": "tmux.ts",
+	"version": "0.1.3",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -53,10 +53,10 @@
 	"license": "ISC",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/dogagenc/tmux.js.git"
+		"url": "git+https://github.com/dogagenc/tmux.ts.git"
 	},
-	"bugs": "https://github.com/dogagenc/tmux.js/issues",
-	"homepage": "https://github.com/dogagenc/tmux.js#readme",
+	"bugs": "https://github.com/dogagenc/tmux.ts/issues",
+	"homepage": "https://github.com/dogagenc/tmux.ts#readme",
 	"engines": {
 		"node": ">=18.0.0"
 	},

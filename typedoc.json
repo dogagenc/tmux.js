@@ -2,7 +2,7 @@
 	"$schema": "https://typedoc.org/schema.json",
 	"entryPoints": ["src/exports/node.ts", "src/commands/index.ts"],
 	"out": "docs-api",
-	"name": "tmux.js",
+	"name": "tmux.ts",
 	"includeVersion": true,
 	"tsconfig": "tsconfig.build.json"
 }

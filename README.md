@@ -1,4 +1,4 @@
-# tmux.js
+# tmux.ts
 
 TypeScript-first programmatic tmux for Node.js and Bun.
 
@@ -15,7 +15,7 @@ This package is an early-stage wrapper around the `tmux` CLI. Commands will be a
 ## Installation
 
 ```sh
-npm install @dogagenc/tmux.js
+npm install tmux.ts
 ```
 
 Requires a `tmux` binary of version 3.4 or newer — found on `PATH` by default, or
@@ -26,9 +26,9 @@ against tmux 3.4 through 3.6.
 
 The package ships ESM-only with three entry points:
 
-- `@dogagenc/tmux.js` — standalone Promise-based API for Node-compatible runtimes. No Effect knowledge required.
-- `@dogagenc/tmux.js/bun` — standalone Promise-based API backed by Bun platform services.
-- `@dogagenc/tmux.js/effect` — Effect-native API (`TmuxClient` service + base layer + tagged errors) for Effect users.
+- `tmux.ts` — standalone Promise-based API for Node-compatible runtimes. No Effect knowledge required.
+- `tmux.ts/bun` — standalone Promise-based API backed by Bun platform services.
+- `tmux.ts/effect` — Effect-native API (`TmuxClient` service + base layer + tagged errors) for Effect users.
 
 All entry points expose the same tagged error classes (`TmuxExecutableNotFound`, `TmuxProcessError`, `TmuxServerNotRunning`, `TmuxTargetNotFound`, `TmuxCommandError`, `TmuxParseError`, `TmuxCommandOptionsError`, `TmuxClientConfigError`). Importing any entry point spawns nothing; tmux only runs when a command is called.
 
@@ -37,7 +37,7 @@ All entry points expose the same tagged error classes (`TmuxExecutableNotFound`,
 ### Standalone (Promise API)
 
 ```ts
-import { TmuxClient, TmuxServerNotRunning } from "@dogagenc/tmux.js";
+import { TmuxClient, TmuxServerNotRunning } from "tmux.ts";
 
 const tmux = new TmuxClient();
 
@@ -60,7 +60,7 @@ try {
 ```ts
 import { NodeServices } from "@effect/platform-node";
 import { Effect, Layer } from "effect";
-import { TmuxClient } from "@dogagenc/tmux.js/effect";
+import { TmuxClient } from "tmux.ts/effect";
 
 const program = Effect.gen(function* () {
 	const tmux = yield* TmuxClient;
@@ -106,7 +106,7 @@ pnpm check       # Biome lint + format
 ## Command coverage
 
 46 tmux commands are wrapped, each with typed options and results — see the
-[API docs](https://dogagenc.github.io/tmux.js/) for per-command details:
+[API docs](https://dogagenc.github.io/tmux.ts/) for per-command details:
 
 `breakPane` `capturePane` `clearHistory` `deleteBuffer` `displayMessage`
 `hasSession` `joinPane` `killPane` `killServer` `killSession` `killWindow`
