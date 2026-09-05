@@ -34,8 +34,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 3.4 is the supported floor; 3.6b is the newest version the suite is green on.
-        tmux-version: ["3.4", "3.6b"]
+        # 3.4 is the supported floor; 3.7b is the latest release.
+        tmux-version: ["3.4", "3.7b"]
     steps:
       - uses: actions/checkout@v7
 

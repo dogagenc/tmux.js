@@ -20,7 +20,7 @@ npm install tmux.ts
 
 Requires a `tmux` binary of version 3.4 or newer — found on `PATH` by default, or
 point at any binary with `new TmuxClient({ executable: "/path/to/tmux" })`. Tested
-against tmux 3.4 through 3.6.
+against tmux 3.4 through 3.7.
 
 ## Entry points
 
